@@ -9,61 +9,516 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
-import { Route as IndexRouteImport } from './routes/index'
+import { Route as OnboardingRouteImport } from './routes/onboarding'
+import { Route as AuthRouteImport } from './routes/auth'
+import { Route as AppRouteImport } from './routes/_app'
+import { Route as AppIndexRouteImport } from './routes/_app.index'
+import { Route as AuthSignupRouteImport } from './routes/auth.signup'
+import { Route as AuthLoginRouteImport } from './routes/auth.login'
+import { Route as AuthForgotRouteImport } from './routes/auth.forgot'
+import { Route as AppStudioRouteImport } from './routes/_app.studio'
+import { Route as AppSettingsRouteImport } from './routes/_app.settings'
+import { Route as AppPromptsRouteImport } from './routes/_app.prompts'
+import { Route as AppProjectsRouteImport } from './routes/_app.projects'
+import { Route as AppOptimizationRouteImport } from './routes/_app.optimization'
+import { Route as AppDashboardRouteImport } from './routes/_app.dashboard'
+import { Route as AppBrandRouteImport } from './routes/_app.brand'
+import { Route as AppAnalyticsRouteImport } from './routes/_app.analytics'
+import { Route as AppAdsRouteImport } from './routes/_app.ads'
+import { Route as AppSettingsIndexRouteImport } from './routes/_app.settings.index'
+import { Route as AppSettingsNotificationsRouteImport } from './routes/_app.settings.notifications'
+import { Route as AppSettingsIntegrationsRouteImport } from './routes/_app.settings.integrations'
+import { Route as AppSettingsGeneralRouteImport } from './routes/_app.settings.general'
+import { Route as AppSettingsDangerRouteImport } from './routes/_app.settings.danger'
+import { Route as AppBuilderPlanIdRouteImport } from './routes/_app.builder.$planId'
 
-const IndexRoute = IndexRouteImport.update({
+const OnboardingRoute = OnboardingRouteImport.update({
+  id: '/onboarding',
+  path: '/onboarding',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AuthRoute = AuthRouteImport.update({
+  id: '/auth',
+  path: '/auth',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AppRoute = AppRouteImport.update({
+  id: '/_app',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AppIndexRoute = AppIndexRouteImport.update({
   id: '/',
   path: '/',
-  getParentRoute: () => rootRouteImport,
+  getParentRoute: () => AppRoute,
+} as any)
+const AuthSignupRoute = AuthSignupRouteImport.update({
+  id: '/signup',
+  path: '/signup',
+  getParentRoute: () => AuthRoute,
+} as any)
+const AuthLoginRoute = AuthLoginRouteImport.update({
+  id: '/login',
+  path: '/login',
+  getParentRoute: () => AuthRoute,
+} as any)
+const AuthForgotRoute = AuthForgotRouteImport.update({
+  id: '/forgot',
+  path: '/forgot',
+  getParentRoute: () => AuthRoute,
+} as any)
+const AppStudioRoute = AppStudioRouteImport.update({
+  id: '/studio',
+  path: '/studio',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppSettingsRoute = AppSettingsRouteImport.update({
+  id: '/settings',
+  path: '/settings',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppPromptsRoute = AppPromptsRouteImport.update({
+  id: '/prompts',
+  path: '/prompts',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppProjectsRoute = AppProjectsRouteImport.update({
+  id: '/projects',
+  path: '/projects',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppOptimizationRoute = AppOptimizationRouteImport.update({
+  id: '/optimization',
+  path: '/optimization',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppDashboardRoute = AppDashboardRouteImport.update({
+  id: '/dashboard',
+  path: '/dashboard',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppBrandRoute = AppBrandRouteImport.update({
+  id: '/brand',
+  path: '/brand',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppAnalyticsRoute = AppAnalyticsRouteImport.update({
+  id: '/analytics',
+  path: '/analytics',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppAdsRoute = AppAdsRouteImport.update({
+  id: '/ads',
+  path: '/ads',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppSettingsIndexRoute = AppSettingsIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => AppSettingsRoute,
+} as any)
+const AppSettingsNotificationsRoute =
+  AppSettingsNotificationsRouteImport.update({
+    id: '/notifications',
+    path: '/notifications',
+    getParentRoute: () => AppSettingsRoute,
+  } as any)
+const AppSettingsIntegrationsRoute = AppSettingsIntegrationsRouteImport.update({
+  id: '/integrations',
+  path: '/integrations',
+  getParentRoute: () => AppSettingsRoute,
+} as any)
+const AppSettingsGeneralRoute = AppSettingsGeneralRouteImport.update({
+  id: '/general',
+  path: '/general',
+  getParentRoute: () => AppSettingsRoute,
+} as any)
+const AppSettingsDangerRoute = AppSettingsDangerRouteImport.update({
+  id: '/danger',
+  path: '/danger',
+  getParentRoute: () => AppSettingsRoute,
+} as any)
+const AppBuilderPlanIdRoute = AppBuilderPlanIdRouteImport.update({
+  id: '/builder/$planId',
+  path: '/builder/$planId',
+  getParentRoute: () => AppRoute,
 } as any)
 
 export interface FileRoutesByFullPath {
-  '/': typeof IndexRoute
+  '/': typeof AppIndexRoute
+  '/auth': typeof AuthRouteWithChildren
+  '/onboarding': typeof OnboardingRoute
+  '/ads': typeof AppAdsRoute
+  '/analytics': typeof AppAnalyticsRoute
+  '/brand': typeof AppBrandRoute
+  '/dashboard': typeof AppDashboardRoute
+  '/optimization': typeof AppOptimizationRoute
+  '/projects': typeof AppProjectsRoute
+  '/prompts': typeof AppPromptsRoute
+  '/settings': typeof AppSettingsRouteWithChildren
+  '/studio': typeof AppStudioRoute
+  '/auth/forgot': typeof AuthForgotRoute
+  '/auth/login': typeof AuthLoginRoute
+  '/auth/signup': typeof AuthSignupRoute
+  '/builder/$planId': typeof AppBuilderPlanIdRoute
+  '/settings/danger': typeof AppSettingsDangerRoute
+  '/settings/general': typeof AppSettingsGeneralRoute
+  '/settings/integrations': typeof AppSettingsIntegrationsRoute
+  '/settings/notifications': typeof AppSettingsNotificationsRoute
+  '/settings/': typeof AppSettingsIndexRoute
 }
 export interface FileRoutesByTo {
-  '/': typeof IndexRoute
+  '/auth': typeof AuthRouteWithChildren
+  '/onboarding': typeof OnboardingRoute
+  '/ads': typeof AppAdsRoute
+  '/analytics': typeof AppAnalyticsRoute
+  '/brand': typeof AppBrandRoute
+  '/dashboard': typeof AppDashboardRoute
+  '/optimization': typeof AppOptimizationRoute
+  '/projects': typeof AppProjectsRoute
+  '/prompts': typeof AppPromptsRoute
+  '/studio': typeof AppStudioRoute
+  '/auth/forgot': typeof AuthForgotRoute
+  '/auth/login': typeof AuthLoginRoute
+  '/auth/signup': typeof AuthSignupRoute
+  '/': typeof AppIndexRoute
+  '/builder/$planId': typeof AppBuilderPlanIdRoute
+  '/settings/danger': typeof AppSettingsDangerRoute
+  '/settings/general': typeof AppSettingsGeneralRoute
+  '/settings/integrations': typeof AppSettingsIntegrationsRoute
+  '/settings/notifications': typeof AppSettingsNotificationsRoute
+  '/settings': typeof AppSettingsIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
-  '/': typeof IndexRoute
+  '/_app': typeof AppRouteWithChildren
+  '/auth': typeof AuthRouteWithChildren
+  '/onboarding': typeof OnboardingRoute
+  '/_app/ads': typeof AppAdsRoute
+  '/_app/analytics': typeof AppAnalyticsRoute
+  '/_app/brand': typeof AppBrandRoute
+  '/_app/dashboard': typeof AppDashboardRoute
+  '/_app/optimization': typeof AppOptimizationRoute
+  '/_app/projects': typeof AppProjectsRoute
+  '/_app/prompts': typeof AppPromptsRoute
+  '/_app/settings': typeof AppSettingsRouteWithChildren
+  '/_app/studio': typeof AppStudioRoute
+  '/auth/forgot': typeof AuthForgotRoute
+  '/auth/login': typeof AuthLoginRoute
+  '/auth/signup': typeof AuthSignupRoute
+  '/_app/': typeof AppIndexRoute
+  '/_app/builder/$planId': typeof AppBuilderPlanIdRoute
+  '/_app/settings/danger': typeof AppSettingsDangerRoute
+  '/_app/settings/general': typeof AppSettingsGeneralRoute
+  '/_app/settings/integrations': typeof AppSettingsIntegrationsRoute
+  '/_app/settings/notifications': typeof AppSettingsNotificationsRoute
+  '/_app/settings/': typeof AppSettingsIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/'
+  fullPaths:
+    | '/'
+    | '/auth'
+    | '/onboarding'
+    | '/ads'
+    | '/analytics'
+    | '/brand'
+    | '/dashboard'
+    | '/optimization'
+    | '/projects'
+    | '/prompts'
+    | '/settings'
+    | '/studio'
+    | '/auth/forgot'
+    | '/auth/login'
+    | '/auth/signup'
+    | '/builder/$planId'
+    | '/settings/danger'
+    | '/settings/general'
+    | '/settings/integrations'
+    | '/settings/notifications'
+    | '/settings/'
   fileRoutesByTo: FileRoutesByTo
-  to: '/'
-  id: '__root__' | '/'
+  to:
+    | '/auth'
+    | '/onboarding'
+    | '/ads'
+    | '/analytics'
+    | '/brand'
+    | '/dashboard'
+    | '/optimization'
+    | '/projects'
+    | '/prompts'
+    | '/studio'
+    | '/auth/forgot'
+    | '/auth/login'
+    | '/auth/signup'
+    | '/'
+    | '/builder/$planId'
+    | '/settings/danger'
+    | '/settings/general'
+    | '/settings/integrations'
+    | '/settings/notifications'
+    | '/settings'
+  id:
+    | '__root__'
+    | '/_app'
+    | '/auth'
+    | '/onboarding'
+    | '/_app/ads'
+    | '/_app/analytics'
+    | '/_app/brand'
+    | '/_app/dashboard'
+    | '/_app/optimization'
+    | '/_app/projects'
+    | '/_app/prompts'
+    | '/_app/settings'
+    | '/_app/studio'
+    | '/auth/forgot'
+    | '/auth/login'
+    | '/auth/signup'
+    | '/_app/'
+    | '/_app/builder/$planId'
+    | '/_app/settings/danger'
+    | '/_app/settings/general'
+    | '/_app/settings/integrations'
+    | '/_app/settings/notifications'
+    | '/_app/settings/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
-  IndexRoute: typeof IndexRoute
+  AppRoute: typeof AppRouteWithChildren
+  AuthRoute: typeof AuthRouteWithChildren
+  OnboardingRoute: typeof OnboardingRoute
 }
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
-    '/': {
-      id: '/'
+    '/onboarding': {
+      id: '/onboarding'
+      path: '/onboarding'
+      fullPath: '/onboarding'
+      preLoaderRoute: typeof OnboardingRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/auth': {
+      id: '/auth'
+      path: '/auth'
+      fullPath: '/auth'
+      preLoaderRoute: typeof AuthRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/_app': {
+      id: '/_app'
+      path: ''
+      fullPath: '/'
+      preLoaderRoute: typeof AppRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/_app/': {
+      id: '/_app/'
       path: '/'
       fullPath: '/'
-      preLoaderRoute: typeof IndexRouteImport
-      parentRoute: typeof rootRouteImport
+      preLoaderRoute: typeof AppIndexRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/auth/signup': {
+      id: '/auth/signup'
+      path: '/signup'
+      fullPath: '/auth/signup'
+      preLoaderRoute: typeof AuthSignupRouteImport
+      parentRoute: typeof AuthRoute
+    }
+    '/auth/login': {
+      id: '/auth/login'
+      path: '/login'
+      fullPath: '/auth/login'
+      preLoaderRoute: typeof AuthLoginRouteImport
+      parentRoute: typeof AuthRoute
+    }
+    '/auth/forgot': {
+      id: '/auth/forgot'
+      path: '/forgot'
+      fullPath: '/auth/forgot'
+      preLoaderRoute: typeof AuthForgotRouteImport
+      parentRoute: typeof AuthRoute
+    }
+    '/_app/studio': {
+      id: '/_app/studio'
+      path: '/studio'
+      fullPath: '/studio'
+      preLoaderRoute: typeof AppStudioRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/_app/settings': {
+      id: '/_app/settings'
+      path: '/settings'
+      fullPath: '/settings'
+      preLoaderRoute: typeof AppSettingsRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/_app/prompts': {
+      id: '/_app/prompts'
+      path: '/prompts'
+      fullPath: '/prompts'
+      preLoaderRoute: typeof AppPromptsRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/_app/projects': {
+      id: '/_app/projects'
+      path: '/projects'
+      fullPath: '/projects'
+      preLoaderRoute: typeof AppProjectsRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/_app/optimization': {
+      id: '/_app/optimization'
+      path: '/optimization'
+      fullPath: '/optimization'
+      preLoaderRoute: typeof AppOptimizationRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/_app/dashboard': {
+      id: '/_app/dashboard'
+      path: '/dashboard'
+      fullPath: '/dashboard'
+      preLoaderRoute: typeof AppDashboardRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/_app/brand': {
+      id: '/_app/brand'
+      path: '/brand'
+      fullPath: '/brand'
+      preLoaderRoute: typeof AppBrandRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/_app/analytics': {
+      id: '/_app/analytics'
+      path: '/analytics'
+      fullPath: '/analytics'
+      preLoaderRoute: typeof AppAnalyticsRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/_app/ads': {
+      id: '/_app/ads'
+      path: '/ads'
+      fullPath: '/ads'
+      preLoaderRoute: typeof AppAdsRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/_app/settings/': {
+      id: '/_app/settings/'
+      path: '/'
+      fullPath: '/settings/'
+      preLoaderRoute: typeof AppSettingsIndexRouteImport
+      parentRoute: typeof AppSettingsRoute
+    }
+    '/_app/settings/notifications': {
+      id: '/_app/settings/notifications'
+      path: '/notifications'
+      fullPath: '/settings/notifications'
+      preLoaderRoute: typeof AppSettingsNotificationsRouteImport
+      parentRoute: typeof AppSettingsRoute
+    }
+    '/_app/settings/integrations': {
+      id: '/_app/settings/integrations'
+      path: '/integrations'
+      fullPath: '/settings/integrations'
+      preLoaderRoute: typeof AppSettingsIntegrationsRouteImport
+      parentRoute: typeof AppSettingsRoute
+    }
+    '/_app/settings/general': {
+      id: '/_app/settings/general'
+      path: '/general'
+      fullPath: '/settings/general'
+      preLoaderRoute: typeof AppSettingsGeneralRouteImport
+      parentRoute: typeof AppSettingsRoute
+    }
+    '/_app/settings/danger': {
+      id: '/_app/settings/danger'
+      path: '/danger'
+      fullPath: '/settings/danger'
+      preLoaderRoute: typeof AppSettingsDangerRouteImport
+      parentRoute: typeof AppSettingsRoute
+    }
+    '/_app/builder/$planId': {
+      id: '/_app/builder/$planId'
+      path: '/builder/$planId'
+      fullPath: '/builder/$planId'
+      preLoaderRoute: typeof AppBuilderPlanIdRouteImport
+      parentRoute: typeof AppRoute
     }
   }
 }
 
+interface AppSettingsRouteChildren {
+  AppSettingsDangerRoute: typeof AppSettingsDangerRoute
+  AppSettingsGeneralRoute: typeof AppSettingsGeneralRoute
+  AppSettingsIntegrationsRoute: typeof AppSettingsIntegrationsRoute
+  AppSettingsNotificationsRoute: typeof AppSettingsNotificationsRoute
+  AppSettingsIndexRoute: typeof AppSettingsIndexRoute
+}
+
+const AppSettingsRouteChildren: AppSettingsRouteChildren = {
+  AppSettingsDangerRoute: AppSettingsDangerRoute,
+  AppSettingsGeneralRoute: AppSettingsGeneralRoute,
+  AppSettingsIntegrationsRoute: AppSettingsIntegrationsRoute,
+  AppSettingsNotificationsRoute: AppSettingsNotificationsRoute,
+  AppSettingsIndexRoute: AppSettingsIndexRoute,
+}
+
+const AppSettingsRouteWithChildren = AppSettingsRoute._addFileChildren(
+  AppSettingsRouteChildren,
+)
+
+interface AppRouteChildren {
+  AppAdsRoute: typeof AppAdsRoute
+  AppAnalyticsRoute: typeof AppAnalyticsRoute
+  AppBrandRoute: typeof AppBrandRoute
+  AppDashboardRoute: typeof AppDashboardRoute
+  AppOptimizationRoute: typeof AppOptimizationRoute
+  AppProjectsRoute: typeof AppProjectsRoute
+  AppPromptsRoute: typeof AppPromptsRoute
+  AppSettingsRoute: typeof AppSettingsRouteWithChildren
+  AppStudioRoute: typeof AppStudioRoute
+  AppIndexRoute: typeof AppIndexRoute
+  AppBuilderPlanIdRoute: typeof AppBuilderPlanIdRoute
+}
+
+const AppRouteChildren: AppRouteChildren = {
+  AppAdsRoute: AppAdsRoute,
+  AppAnalyticsRoute: AppAnalyticsRoute,
+  AppBrandRoute: AppBrandRoute,
+  AppDashboardRoute: AppDashboardRoute,
+  AppOptimizationRoute: AppOptimizationRoute,
+  AppProjectsRoute: AppProjectsRoute,
+  AppPromptsRoute: AppPromptsRoute,
+  AppSettingsRoute: AppSettingsRouteWithChildren,
+  AppStudioRoute: AppStudioRoute,
+  AppIndexRoute: AppIndexRoute,
+  AppBuilderPlanIdRoute: AppBuilderPlanIdRoute,
+}
+
+const AppRouteWithChildren = AppRoute._addFileChildren(AppRouteChildren)
+
+interface AuthRouteChildren {
+  AuthForgotRoute: typeof AuthForgotRoute
+  AuthLoginRoute: typeof AuthLoginRoute
+  AuthSignupRoute: typeof AuthSignupRoute
+}
+
+const AuthRouteChildren: AuthRouteChildren = {
+  AuthForgotRoute: AuthForgotRoute,
+  AuthLoginRoute: AuthLoginRoute,
+  AuthSignupRoute: AuthSignupRoute,
+}
+
+const AuthRouteWithChildren = AuthRoute._addFileChildren(AuthRouteChildren)
+
 const rootRouteChildren: RootRouteChildren = {
-  IndexRoute: IndexRoute,
+  AppRoute: AppRouteWithChildren,
+  AuthRoute: AuthRouteWithChildren,
+  OnboardingRoute: OnboardingRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
-
-import type { getRouter } from './router.tsx'
-import type { startInstance } from './start.ts'
-declare module '@tanstack/react-start' {
-  interface Register {
-    ssr: true
-    router: Awaited<ReturnType<typeof getRouter>>
-    config: Awaited<ReturnType<typeof startInstance.getOptions>>
-  }
-}
