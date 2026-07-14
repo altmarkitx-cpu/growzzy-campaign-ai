@@ -12,6 +12,7 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as AppRouteImport } from './routes/_app'
 import { Route as AppIndexRouteImport } from './routes/_app.index'
 import { Route as AppStudioRouteImport } from './routes/_app.studio'
+import { Route as AppSettingsRouteImport } from './routes/_app.settings'
 import { Route as AppPromptsRouteImport } from './routes/_app.prompts'
 import { Route as AppProjectsRouteImport } from './routes/_app.projects'
 import { Route as AppOptimizationRouteImport } from './routes/_app.optimization'
@@ -19,6 +20,11 @@ import { Route as AppDashboardRouteImport } from './routes/_app.dashboard'
 import { Route as AppBrandRouteImport } from './routes/_app.brand'
 import { Route as AppAnalyticsRouteImport } from './routes/_app.analytics'
 import { Route as AppAdsRouteImport } from './routes/_app.ads'
+import { Route as AppSettingsIndexRouteImport } from './routes/_app.settings.index'
+import { Route as AppSettingsNotificationsRouteImport } from './routes/_app.settings.notifications'
+import { Route as AppSettingsIntegrationsRouteImport } from './routes/_app.settings.integrations'
+import { Route as AppSettingsGeneralRouteImport } from './routes/_app.settings.general'
+import { Route as AppSettingsDangerRouteImport } from './routes/_app.settings.danger'
 import { Route as AppBuilderPlanIdRouteImport } from './routes/_app.builder.$planId'
 
 const AppRoute = AppRouteImport.update({
@@ -33,6 +39,11 @@ const AppIndexRoute = AppIndexRouteImport.update({
 const AppStudioRoute = AppStudioRouteImport.update({
   id: '/studio',
   path: '/studio',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppSettingsRoute = AppSettingsRouteImport.update({
+  id: '/settings',
+  path: '/settings',
   getParentRoute: () => AppRoute,
 } as any)
 const AppPromptsRoute = AppPromptsRouteImport.update({
@@ -70,6 +81,32 @@ const AppAdsRoute = AppAdsRouteImport.update({
   path: '/ads',
   getParentRoute: () => AppRoute,
 } as any)
+const AppSettingsIndexRoute = AppSettingsIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => AppSettingsRoute,
+} as any)
+const AppSettingsNotificationsRoute =
+  AppSettingsNotificationsRouteImport.update({
+    id: '/notifications',
+    path: '/notifications',
+    getParentRoute: () => AppSettingsRoute,
+  } as any)
+const AppSettingsIntegrationsRoute = AppSettingsIntegrationsRouteImport.update({
+  id: '/integrations',
+  path: '/integrations',
+  getParentRoute: () => AppSettingsRoute,
+} as any)
+const AppSettingsGeneralRoute = AppSettingsGeneralRouteImport.update({
+  id: '/general',
+  path: '/general',
+  getParentRoute: () => AppSettingsRoute,
+} as any)
+const AppSettingsDangerRoute = AppSettingsDangerRouteImport.update({
+  id: '/danger',
+  path: '/danger',
+  getParentRoute: () => AppSettingsRoute,
+} as any)
 const AppBuilderPlanIdRoute = AppBuilderPlanIdRouteImport.update({
   id: '/builder/$planId',
   path: '/builder/$planId',
@@ -85,8 +122,14 @@ export interface FileRoutesByFullPath {
   '/optimization': typeof AppOptimizationRoute
   '/projects': typeof AppProjectsRoute
   '/prompts': typeof AppPromptsRoute
+  '/settings': typeof AppSettingsRouteWithChildren
   '/studio': typeof AppStudioRoute
   '/builder/$planId': typeof AppBuilderPlanIdRoute
+  '/settings/danger': typeof AppSettingsDangerRoute
+  '/settings/general': typeof AppSettingsGeneralRoute
+  '/settings/integrations': typeof AppSettingsIntegrationsRoute
+  '/settings/notifications': typeof AppSettingsNotificationsRoute
+  '/settings/': typeof AppSettingsIndexRoute
 }
 export interface FileRoutesByTo {
   '/ads': typeof AppAdsRoute
@@ -99,6 +142,11 @@ export interface FileRoutesByTo {
   '/studio': typeof AppStudioRoute
   '/': typeof AppIndexRoute
   '/builder/$planId': typeof AppBuilderPlanIdRoute
+  '/settings/danger': typeof AppSettingsDangerRoute
+  '/settings/general': typeof AppSettingsGeneralRoute
+  '/settings/integrations': typeof AppSettingsIntegrationsRoute
+  '/settings/notifications': typeof AppSettingsNotificationsRoute
+  '/settings': typeof AppSettingsIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -110,9 +158,15 @@ export interface FileRoutesById {
   '/_app/optimization': typeof AppOptimizationRoute
   '/_app/projects': typeof AppProjectsRoute
   '/_app/prompts': typeof AppPromptsRoute
+  '/_app/settings': typeof AppSettingsRouteWithChildren
   '/_app/studio': typeof AppStudioRoute
   '/_app/': typeof AppIndexRoute
   '/_app/builder/$planId': typeof AppBuilderPlanIdRoute
+  '/_app/settings/danger': typeof AppSettingsDangerRoute
+  '/_app/settings/general': typeof AppSettingsGeneralRoute
+  '/_app/settings/integrations': typeof AppSettingsIntegrationsRoute
+  '/_app/settings/notifications': typeof AppSettingsNotificationsRoute
+  '/_app/settings/': typeof AppSettingsIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -125,8 +179,14 @@ export interface FileRouteTypes {
     | '/optimization'
     | '/projects'
     | '/prompts'
+    | '/settings'
     | '/studio'
     | '/builder/$planId'
+    | '/settings/danger'
+    | '/settings/general'
+    | '/settings/integrations'
+    | '/settings/notifications'
+    | '/settings/'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/ads'
@@ -139,6 +199,11 @@ export interface FileRouteTypes {
     | '/studio'
     | '/'
     | '/builder/$planId'
+    | '/settings/danger'
+    | '/settings/general'
+    | '/settings/integrations'
+    | '/settings/notifications'
+    | '/settings'
   id:
     | '__root__'
     | '/_app'
@@ -149,9 +214,15 @@ export interface FileRouteTypes {
     | '/_app/optimization'
     | '/_app/projects'
     | '/_app/prompts'
+    | '/_app/settings'
     | '/_app/studio'
     | '/_app/'
     | '/_app/builder/$planId'
+    | '/_app/settings/danger'
+    | '/_app/settings/general'
+    | '/_app/settings/integrations'
+    | '/_app/settings/notifications'
+    | '/_app/settings/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -179,6 +250,13 @@ declare module '@tanstack/react-router' {
       path: '/studio'
       fullPath: '/studio'
       preLoaderRoute: typeof AppStudioRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/_app/settings': {
+      id: '/_app/settings'
+      path: '/settings'
+      fullPath: '/settings'
+      preLoaderRoute: typeof AppSettingsRouteImport
       parentRoute: typeof AppRoute
     }
     '/_app/prompts': {
@@ -230,6 +308,41 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppAdsRouteImport
       parentRoute: typeof AppRoute
     }
+    '/_app/settings/': {
+      id: '/_app/settings/'
+      path: '/'
+      fullPath: '/settings/'
+      preLoaderRoute: typeof AppSettingsIndexRouteImport
+      parentRoute: typeof AppSettingsRoute
+    }
+    '/_app/settings/notifications': {
+      id: '/_app/settings/notifications'
+      path: '/notifications'
+      fullPath: '/settings/notifications'
+      preLoaderRoute: typeof AppSettingsNotificationsRouteImport
+      parentRoute: typeof AppSettingsRoute
+    }
+    '/_app/settings/integrations': {
+      id: '/_app/settings/integrations'
+      path: '/integrations'
+      fullPath: '/settings/integrations'
+      preLoaderRoute: typeof AppSettingsIntegrationsRouteImport
+      parentRoute: typeof AppSettingsRoute
+    }
+    '/_app/settings/general': {
+      id: '/_app/settings/general'
+      path: '/general'
+      fullPath: '/settings/general'
+      preLoaderRoute: typeof AppSettingsGeneralRouteImport
+      parentRoute: typeof AppSettingsRoute
+    }
+    '/_app/settings/danger': {
+      id: '/_app/settings/danger'
+      path: '/danger'
+      fullPath: '/settings/danger'
+      preLoaderRoute: typeof AppSettingsDangerRouteImport
+      parentRoute: typeof AppSettingsRoute
+    }
     '/_app/builder/$planId': {
       id: '/_app/builder/$planId'
       path: '/builder/$planId'
@@ -240,6 +353,26 @@ declare module '@tanstack/react-router' {
   }
 }
 
+interface AppSettingsRouteChildren {
+  AppSettingsDangerRoute: typeof AppSettingsDangerRoute
+  AppSettingsGeneralRoute: typeof AppSettingsGeneralRoute
+  AppSettingsIntegrationsRoute: typeof AppSettingsIntegrationsRoute
+  AppSettingsNotificationsRoute: typeof AppSettingsNotificationsRoute
+  AppSettingsIndexRoute: typeof AppSettingsIndexRoute
+}
+
+const AppSettingsRouteChildren: AppSettingsRouteChildren = {
+  AppSettingsDangerRoute: AppSettingsDangerRoute,
+  AppSettingsGeneralRoute: AppSettingsGeneralRoute,
+  AppSettingsIntegrationsRoute: AppSettingsIntegrationsRoute,
+  AppSettingsNotificationsRoute: AppSettingsNotificationsRoute,
+  AppSettingsIndexRoute: AppSettingsIndexRoute,
+}
+
+const AppSettingsRouteWithChildren = AppSettingsRoute._addFileChildren(
+  AppSettingsRouteChildren,
+)
+
 interface AppRouteChildren {
   AppAdsRoute: typeof AppAdsRoute
   AppAnalyticsRoute: typeof AppAnalyticsRoute
@@ -248,6 +381,7 @@ interface AppRouteChildren {
   AppOptimizationRoute: typeof AppOptimizationRoute
   AppProjectsRoute: typeof AppProjectsRoute
   AppPromptsRoute: typeof AppPromptsRoute
+  AppSettingsRoute: typeof AppSettingsRouteWithChildren
   AppStudioRoute: typeof AppStudioRoute
   AppIndexRoute: typeof AppIndexRoute
   AppBuilderPlanIdRoute: typeof AppBuilderPlanIdRoute
@@ -261,6 +395,7 @@ const AppRouteChildren: AppRouteChildren = {
   AppOptimizationRoute: AppOptimizationRoute,
   AppProjectsRoute: AppProjectsRoute,
   AppPromptsRoute: AppPromptsRoute,
+  AppSettingsRoute: AppSettingsRouteWithChildren,
   AppStudioRoute: AppStudioRoute,
   AppIndexRoute: AppIndexRoute,
   AppBuilderPlanIdRoute: AppBuilderPlanIdRoute,
