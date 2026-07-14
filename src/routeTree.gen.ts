@@ -9,61 +9,247 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
-import { Route as IndexRouteImport } from './routes/index'
+import { Route as AppRouteImport } from './routes/_app'
+import { Route as AppIndexRouteImport } from './routes/_app.index'
+import { Route as AppStudioRouteImport } from './routes/_app.studio'
+import { Route as AppPromptsRouteImport } from './routes/_app.prompts'
+import { Route as AppProjectsRouteImport } from './routes/_app.projects'
+import { Route as AppOptimizationRouteImport } from './routes/_app.optimization'
+import { Route as AppDashboardRouteImport } from './routes/_app.dashboard'
+import { Route as AppBrandRouteImport } from './routes/_app.brand'
+import { Route as AppAnalyticsRouteImport } from './routes/_app.analytics'
+import { Route as AppAdsRouteImport } from './routes/_app.ads'
 
-const IndexRoute = IndexRouteImport.update({
+const AppRoute = AppRouteImport.update({
+  id: '/_app',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AppIndexRoute = AppIndexRouteImport.update({
   id: '/',
   path: '/',
-  getParentRoute: () => rootRouteImport,
+  getParentRoute: () => AppRoute,
+} as any)
+const AppStudioRoute = AppStudioRouteImport.update({
+  id: '/studio',
+  path: '/studio',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppPromptsRoute = AppPromptsRouteImport.update({
+  id: '/prompts',
+  path: '/prompts',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppProjectsRoute = AppProjectsRouteImport.update({
+  id: '/projects',
+  path: '/projects',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppOptimizationRoute = AppOptimizationRouteImport.update({
+  id: '/optimization',
+  path: '/optimization',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppDashboardRoute = AppDashboardRouteImport.update({
+  id: '/dashboard',
+  path: '/dashboard',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppBrandRoute = AppBrandRouteImport.update({
+  id: '/brand',
+  path: '/brand',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppAnalyticsRoute = AppAnalyticsRouteImport.update({
+  id: '/analytics',
+  path: '/analytics',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppAdsRoute = AppAdsRouteImport.update({
+  id: '/ads',
+  path: '/ads',
+  getParentRoute: () => AppRoute,
 } as any)
 
 export interface FileRoutesByFullPath {
-  '/': typeof IndexRoute
+  '/': typeof AppIndexRoute
+  '/ads': typeof AppAdsRoute
+  '/analytics': typeof AppAnalyticsRoute
+  '/brand': typeof AppBrandRoute
+  '/dashboard': typeof AppDashboardRoute
+  '/optimization': typeof AppOptimizationRoute
+  '/projects': typeof AppProjectsRoute
+  '/prompts': typeof AppPromptsRoute
+  '/studio': typeof AppStudioRoute
 }
 export interface FileRoutesByTo {
-  '/': typeof IndexRoute
+  '/ads': typeof AppAdsRoute
+  '/analytics': typeof AppAnalyticsRoute
+  '/brand': typeof AppBrandRoute
+  '/dashboard': typeof AppDashboardRoute
+  '/optimization': typeof AppOptimizationRoute
+  '/projects': typeof AppProjectsRoute
+  '/prompts': typeof AppPromptsRoute
+  '/studio': typeof AppStudioRoute
+  '/': typeof AppIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
-  '/': typeof IndexRoute
+  '/_app': typeof AppRouteWithChildren
+  '/_app/ads': typeof AppAdsRoute
+  '/_app/analytics': typeof AppAnalyticsRoute
+  '/_app/brand': typeof AppBrandRoute
+  '/_app/dashboard': typeof AppDashboardRoute
+  '/_app/optimization': typeof AppOptimizationRoute
+  '/_app/projects': typeof AppProjectsRoute
+  '/_app/prompts': typeof AppPromptsRoute
+  '/_app/studio': typeof AppStudioRoute
+  '/_app/': typeof AppIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/'
+  fullPaths:
+    | '/'
+    | '/ads'
+    | '/analytics'
+    | '/brand'
+    | '/dashboard'
+    | '/optimization'
+    | '/projects'
+    | '/prompts'
+    | '/studio'
   fileRoutesByTo: FileRoutesByTo
-  to: '/'
-  id: '__root__' | '/'
+  to:
+    | '/ads'
+    | '/analytics'
+    | '/brand'
+    | '/dashboard'
+    | '/optimization'
+    | '/projects'
+    | '/prompts'
+    | '/studio'
+    | '/'
+  id:
+    | '__root__'
+    | '/_app'
+    | '/_app/ads'
+    | '/_app/analytics'
+    | '/_app/brand'
+    | '/_app/dashboard'
+    | '/_app/optimization'
+    | '/_app/projects'
+    | '/_app/prompts'
+    | '/_app/studio'
+    | '/_app/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
-  IndexRoute: typeof IndexRoute
+  AppRoute: typeof AppRouteWithChildren
 }
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
-    '/': {
-      id: '/'
+    '/_app': {
+      id: '/_app'
+      path: ''
+      fullPath: '/'
+      preLoaderRoute: typeof AppRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/_app/': {
+      id: '/_app/'
       path: '/'
       fullPath: '/'
-      preLoaderRoute: typeof IndexRouteImport
-      parentRoute: typeof rootRouteImport
+      preLoaderRoute: typeof AppIndexRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/_app/studio': {
+      id: '/_app/studio'
+      path: '/studio'
+      fullPath: '/studio'
+      preLoaderRoute: typeof AppStudioRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/_app/prompts': {
+      id: '/_app/prompts'
+      path: '/prompts'
+      fullPath: '/prompts'
+      preLoaderRoute: typeof AppPromptsRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/_app/projects': {
+      id: '/_app/projects'
+      path: '/projects'
+      fullPath: '/projects'
+      preLoaderRoute: typeof AppProjectsRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/_app/optimization': {
+      id: '/_app/optimization'
+      path: '/optimization'
+      fullPath: '/optimization'
+      preLoaderRoute: typeof AppOptimizationRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/_app/dashboard': {
+      id: '/_app/dashboard'
+      path: '/dashboard'
+      fullPath: '/dashboard'
+      preLoaderRoute: typeof AppDashboardRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/_app/brand': {
+      id: '/_app/brand'
+      path: '/brand'
+      fullPath: '/brand'
+      preLoaderRoute: typeof AppBrandRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/_app/analytics': {
+      id: '/_app/analytics'
+      path: '/analytics'
+      fullPath: '/analytics'
+      preLoaderRoute: typeof AppAnalyticsRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/_app/ads': {
+      id: '/_app/ads'
+      path: '/ads'
+      fullPath: '/ads'
+      preLoaderRoute: typeof AppAdsRouteImport
+      parentRoute: typeof AppRoute
     }
   }
 }
 
+interface AppRouteChildren {
+  AppAdsRoute: typeof AppAdsRoute
+  AppAnalyticsRoute: typeof AppAnalyticsRoute
+  AppBrandRoute: typeof AppBrandRoute
+  AppDashboardRoute: typeof AppDashboardRoute
+  AppOptimizationRoute: typeof AppOptimizationRoute
+  AppProjectsRoute: typeof AppProjectsRoute
+  AppPromptsRoute: typeof AppPromptsRoute
+  AppStudioRoute: typeof AppStudioRoute
+  AppIndexRoute: typeof AppIndexRoute
+}
+
+const AppRouteChildren: AppRouteChildren = {
+  AppAdsRoute: AppAdsRoute,
+  AppAnalyticsRoute: AppAnalyticsRoute,
+  AppBrandRoute: AppBrandRoute,
+  AppDashboardRoute: AppDashboardRoute,
+  AppOptimizationRoute: AppOptimizationRoute,
+  AppProjectsRoute: AppProjectsRoute,
+  AppPromptsRoute: AppPromptsRoute,
+  AppStudioRoute: AppStudioRoute,
+  AppIndexRoute: AppIndexRoute,
+}
+
+const AppRouteWithChildren = AppRoute._addFileChildren(AppRouteChildren)
+
 const rootRouteChildren: RootRouteChildren = {
-  IndexRoute: IndexRoute,
+  AppRoute: AppRouteWithChildren,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
-
-import type { getRouter } from './router.tsx'
-import type { startInstance } from './start.ts'
-declare module '@tanstack/react-start' {
-  interface Register {
-    ssr: true
-    router: Awaited<ReturnType<typeof getRouter>>
-    config: Awaited<ReturnType<typeof startInstance.getOptions>>
-  }
-}
