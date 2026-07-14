@@ -19,6 +19,7 @@ import { Route as AppDashboardRouteImport } from './routes/_app.dashboard'
 import { Route as AppBrandRouteImport } from './routes/_app.brand'
 import { Route as AppAnalyticsRouteImport } from './routes/_app.analytics'
 import { Route as AppAdsRouteImport } from './routes/_app.ads'
+import { Route as AppBuilderPlanIdRouteImport } from './routes/_app.builder.$planId'
 
 const AppRoute = AppRouteImport.update({
   id: '/_app',
@@ -69,6 +70,11 @@ const AppAdsRoute = AppAdsRouteImport.update({
   path: '/ads',
   getParentRoute: () => AppRoute,
 } as any)
+const AppBuilderPlanIdRoute = AppBuilderPlanIdRouteImport.update({
+  id: '/builder/$planId',
+  path: '/builder/$planId',
+  getParentRoute: () => AppRoute,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof AppIndexRoute
@@ -80,6 +86,7 @@ export interface FileRoutesByFullPath {
   '/projects': typeof AppProjectsRoute
   '/prompts': typeof AppPromptsRoute
   '/studio': typeof AppStudioRoute
+  '/builder/$planId': typeof AppBuilderPlanIdRoute
 }
 export interface FileRoutesByTo {
   '/ads': typeof AppAdsRoute
@@ -91,6 +98,7 @@ export interface FileRoutesByTo {
   '/prompts': typeof AppPromptsRoute
   '/studio': typeof AppStudioRoute
   '/': typeof AppIndexRoute
+  '/builder/$planId': typeof AppBuilderPlanIdRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -104,6 +112,7 @@ export interface FileRoutesById {
   '/_app/prompts': typeof AppPromptsRoute
   '/_app/studio': typeof AppStudioRoute
   '/_app/': typeof AppIndexRoute
+  '/_app/builder/$planId': typeof AppBuilderPlanIdRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -117,6 +126,7 @@ export interface FileRouteTypes {
     | '/projects'
     | '/prompts'
     | '/studio'
+    | '/builder/$planId'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/ads'
@@ -128,6 +138,7 @@ export interface FileRouteTypes {
     | '/prompts'
     | '/studio'
     | '/'
+    | '/builder/$planId'
   id:
     | '__root__'
     | '/_app'
@@ -140,6 +151,7 @@ export interface FileRouteTypes {
     | '/_app/prompts'
     | '/_app/studio'
     | '/_app/'
+    | '/_app/builder/$planId'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -218,6 +230,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppAdsRouteImport
       parentRoute: typeof AppRoute
     }
+    '/_app/builder/$planId': {
+      id: '/_app/builder/$planId'
+      path: '/builder/$planId'
+      fullPath: '/builder/$planId'
+      preLoaderRoute: typeof AppBuilderPlanIdRouteImport
+      parentRoute: typeof AppRoute
+    }
   }
 }
 
@@ -231,6 +250,7 @@ interface AppRouteChildren {
   AppPromptsRoute: typeof AppPromptsRoute
   AppStudioRoute: typeof AppStudioRoute
   AppIndexRoute: typeof AppIndexRoute
+  AppBuilderPlanIdRoute: typeof AppBuilderPlanIdRoute
 }
 
 const AppRouteChildren: AppRouteChildren = {
@@ -243,6 +263,7 @@ const AppRouteChildren: AppRouteChildren = {
   AppPromptsRoute: AppPromptsRoute,
   AppStudioRoute: AppStudioRoute,
   AppIndexRoute: AppIndexRoute,
+  AppBuilderPlanIdRoute: AppBuilderPlanIdRoute,
 }
 
 const AppRouteWithChildren = AppRoute._addFileChildren(AppRouteChildren)
