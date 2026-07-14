@@ -9,8 +9,13 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
+import { Route as OnboardingRouteImport } from './routes/onboarding'
+import { Route as AuthRouteImport } from './routes/auth'
 import { Route as AppRouteImport } from './routes/_app'
 import { Route as AppIndexRouteImport } from './routes/_app.index'
+import { Route as AuthSignupRouteImport } from './routes/auth.signup'
+import { Route as AuthLoginRouteImport } from './routes/auth.login'
+import { Route as AuthForgotRouteImport } from './routes/auth.forgot'
 import { Route as AppStudioRouteImport } from './routes/_app.studio'
 import { Route as AppSettingsRouteImport } from './routes/_app.settings'
 import { Route as AppPromptsRouteImport } from './routes/_app.prompts'
@@ -27,6 +32,16 @@ import { Route as AppSettingsGeneralRouteImport } from './routes/_app.settings.g
 import { Route as AppSettingsDangerRouteImport } from './routes/_app.settings.danger'
 import { Route as AppBuilderPlanIdRouteImport } from './routes/_app.builder.$planId'
 
+const OnboardingRoute = OnboardingRouteImport.update({
+  id: '/onboarding',
+  path: '/onboarding',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AuthRoute = AuthRouteImport.update({
+  id: '/auth',
+  path: '/auth',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const AppRoute = AppRouteImport.update({
   id: '/_app',
   getParentRoute: () => rootRouteImport,
@@ -35,6 +50,21 @@ const AppIndexRoute = AppIndexRouteImport.update({
   id: '/',
   path: '/',
   getParentRoute: () => AppRoute,
+} as any)
+const AuthSignupRoute = AuthSignupRouteImport.update({
+  id: '/signup',
+  path: '/signup',
+  getParentRoute: () => AuthRoute,
+} as any)
+const AuthLoginRoute = AuthLoginRouteImport.update({
+  id: '/login',
+  path: '/login',
+  getParentRoute: () => AuthRoute,
+} as any)
+const AuthForgotRoute = AuthForgotRouteImport.update({
+  id: '/forgot',
+  path: '/forgot',
+  getParentRoute: () => AuthRoute,
 } as any)
 const AppStudioRoute = AppStudioRouteImport.update({
   id: '/studio',
@@ -115,6 +145,8 @@ const AppBuilderPlanIdRoute = AppBuilderPlanIdRouteImport.update({
 
 export interface FileRoutesByFullPath {
   '/': typeof AppIndexRoute
+  '/auth': typeof AuthRouteWithChildren
+  '/onboarding': typeof OnboardingRoute
   '/ads': typeof AppAdsRoute
   '/analytics': typeof AppAnalyticsRoute
   '/brand': typeof AppBrandRoute
@@ -124,6 +156,9 @@ export interface FileRoutesByFullPath {
   '/prompts': typeof AppPromptsRoute
   '/settings': typeof AppSettingsRouteWithChildren
   '/studio': typeof AppStudioRoute
+  '/auth/forgot': typeof AuthForgotRoute
+  '/auth/login': typeof AuthLoginRoute
+  '/auth/signup': typeof AuthSignupRoute
   '/builder/$planId': typeof AppBuilderPlanIdRoute
   '/settings/danger': typeof AppSettingsDangerRoute
   '/settings/general': typeof AppSettingsGeneralRoute
@@ -132,6 +167,8 @@ export interface FileRoutesByFullPath {
   '/settings/': typeof AppSettingsIndexRoute
 }
 export interface FileRoutesByTo {
+  '/auth': typeof AuthRouteWithChildren
+  '/onboarding': typeof OnboardingRoute
   '/ads': typeof AppAdsRoute
   '/analytics': typeof AppAnalyticsRoute
   '/brand': typeof AppBrandRoute
@@ -140,6 +177,9 @@ export interface FileRoutesByTo {
   '/projects': typeof AppProjectsRoute
   '/prompts': typeof AppPromptsRoute
   '/studio': typeof AppStudioRoute
+  '/auth/forgot': typeof AuthForgotRoute
+  '/auth/login': typeof AuthLoginRoute
+  '/auth/signup': typeof AuthSignupRoute
   '/': typeof AppIndexRoute
   '/builder/$planId': typeof AppBuilderPlanIdRoute
   '/settings/danger': typeof AppSettingsDangerRoute
@@ -151,6 +191,8 @@ export interface FileRoutesByTo {
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/_app': typeof AppRouteWithChildren
+  '/auth': typeof AuthRouteWithChildren
+  '/onboarding': typeof OnboardingRoute
   '/_app/ads': typeof AppAdsRoute
   '/_app/analytics': typeof AppAnalyticsRoute
   '/_app/brand': typeof AppBrandRoute
@@ -160,6 +202,9 @@ export interface FileRoutesById {
   '/_app/prompts': typeof AppPromptsRoute
   '/_app/settings': typeof AppSettingsRouteWithChildren
   '/_app/studio': typeof AppStudioRoute
+  '/auth/forgot': typeof AuthForgotRoute
+  '/auth/login': typeof AuthLoginRoute
+  '/auth/signup': typeof AuthSignupRoute
   '/_app/': typeof AppIndexRoute
   '/_app/builder/$planId': typeof AppBuilderPlanIdRoute
   '/_app/settings/danger': typeof AppSettingsDangerRoute
@@ -172,6 +217,8 @@ export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | '/'
+    | '/auth'
+    | '/onboarding'
     | '/ads'
     | '/analytics'
     | '/brand'
@@ -181,6 +228,9 @@ export interface FileRouteTypes {
     | '/prompts'
     | '/settings'
     | '/studio'
+    | '/auth/forgot'
+    | '/auth/login'
+    | '/auth/signup'
     | '/builder/$planId'
     | '/settings/danger'
     | '/settings/general'
@@ -189,6 +239,8 @@ export interface FileRouteTypes {
     | '/settings/'
   fileRoutesByTo: FileRoutesByTo
   to:
+    | '/auth'
+    | '/onboarding'
     | '/ads'
     | '/analytics'
     | '/brand'
@@ -197,6 +249,9 @@ export interface FileRouteTypes {
     | '/projects'
     | '/prompts'
     | '/studio'
+    | '/auth/forgot'
+    | '/auth/login'
+    | '/auth/signup'
     | '/'
     | '/builder/$planId'
     | '/settings/danger'
@@ -207,6 +262,8 @@ export interface FileRouteTypes {
   id:
     | '__root__'
     | '/_app'
+    | '/auth'
+    | '/onboarding'
     | '/_app/ads'
     | '/_app/analytics'
     | '/_app/brand'
@@ -216,6 +273,9 @@ export interface FileRouteTypes {
     | '/_app/prompts'
     | '/_app/settings'
     | '/_app/studio'
+    | '/auth/forgot'
+    | '/auth/login'
+    | '/auth/signup'
     | '/_app/'
     | '/_app/builder/$planId'
     | '/_app/settings/danger'
@@ -227,10 +287,26 @@ export interface FileRouteTypes {
 }
 export interface RootRouteChildren {
   AppRoute: typeof AppRouteWithChildren
+  AuthRoute: typeof AuthRouteWithChildren
+  OnboardingRoute: typeof OnboardingRoute
 }
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
+    '/onboarding': {
+      id: '/onboarding'
+      path: '/onboarding'
+      fullPath: '/onboarding'
+      preLoaderRoute: typeof OnboardingRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/auth': {
+      id: '/auth'
+      path: '/auth'
+      fullPath: '/auth'
+      preLoaderRoute: typeof AuthRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/_app': {
       id: '/_app'
       path: ''
@@ -244,6 +320,27 @@ declare module '@tanstack/react-router' {
       fullPath: '/'
       preLoaderRoute: typeof AppIndexRouteImport
       parentRoute: typeof AppRoute
+    }
+    '/auth/signup': {
+      id: '/auth/signup'
+      path: '/signup'
+      fullPath: '/auth/signup'
+      preLoaderRoute: typeof AuthSignupRouteImport
+      parentRoute: typeof AuthRoute
+    }
+    '/auth/login': {
+      id: '/auth/login'
+      path: '/login'
+      fullPath: '/auth/login'
+      preLoaderRoute: typeof AuthLoginRouteImport
+      parentRoute: typeof AuthRoute
+    }
+    '/auth/forgot': {
+      id: '/auth/forgot'
+      path: '/forgot'
+      fullPath: '/auth/forgot'
+      preLoaderRoute: typeof AuthForgotRouteImport
+      parentRoute: typeof AuthRoute
     }
     '/_app/studio': {
       id: '/_app/studio'
@@ -403,8 +500,24 @@ const AppRouteChildren: AppRouteChildren = {
 
 const AppRouteWithChildren = AppRoute._addFileChildren(AppRouteChildren)
 
+interface AuthRouteChildren {
+  AuthForgotRoute: typeof AuthForgotRoute
+  AuthLoginRoute: typeof AuthLoginRoute
+  AuthSignupRoute: typeof AuthSignupRoute
+}
+
+const AuthRouteChildren: AuthRouteChildren = {
+  AuthForgotRoute: AuthForgotRoute,
+  AuthLoginRoute: AuthLoginRoute,
+  AuthSignupRoute: AuthSignupRoute,
+}
+
+const AuthRouteWithChildren = AuthRoute._addFileChildren(AuthRouteChildren)
+
 const rootRouteChildren: RootRouteChildren = {
   AppRoute: AppRouteWithChildren,
+  AuthRoute: AuthRouteWithChildren,
+  OnboardingRoute: OnboardingRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
