@@ -31,9 +31,9 @@ function BillingPage() {
         </SettingsSection>
       ) : (
         <>
-          <SettingsSection title="Current plan">{/* real plan card here */}</SettingsSection>
-          <SettingsSection title="Payment method">{/* real card details here */}</SettingsSection>
-          <SettingsSection title="Invoice history">{/* real table here */}</SettingsSection>
+          <SettingsSection title="Current plan"><div /></SettingsSection>
+          <SettingsSection title="Payment method"><div /></SettingsSection>
+          <SettingsSection title="Invoice history"><div /></SettingsSection>
         </>
       )}
     </>

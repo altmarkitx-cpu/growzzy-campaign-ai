@@ -29,7 +29,7 @@ import { Route as AppSettingsIndexRouteImport } from './routes/_app.settings.ind
 import { Route as AppSettingsNotificationsRouteImport } from './routes/_app.settings.notifications'
 import { Route as AppSettingsIntegrationsRouteImport } from './routes/_app.settings.integrations'
 import { Route as AppSettingsGeneralRouteImport } from './routes/_app.settings.general'
-import { Route as AppSettingsDangerRouteImport } from './routes/_app.settings.danger'
+import { Route as AppSettingsBillingRouteImport } from './routes/_app.settings.billing'
 import { Route as AppBuilderPlanIdRouteImport } from './routes/_app.builder.$planId'
 
 const OnboardingRoute = OnboardingRouteImport.update({
@@ -132,9 +132,9 @@ const AppSettingsGeneralRoute = AppSettingsGeneralRouteImport.update({
   path: '/general',
   getParentRoute: () => AppSettingsRoute,
 } as any)
-const AppSettingsDangerRoute = AppSettingsDangerRouteImport.update({
-  id: '/danger',
-  path: '/danger',
+const AppSettingsBillingRoute = AppSettingsBillingRouteImport.update({
+  id: '/billing',
+  path: '/billing',
   getParentRoute: () => AppSettingsRoute,
 } as any)
 const AppBuilderPlanIdRoute = AppBuilderPlanIdRouteImport.update({
@@ -160,7 +160,7 @@ export interface FileRoutesByFullPath {
   '/auth/login': typeof AuthLoginRoute
   '/auth/signup': typeof AuthSignupRoute
   '/builder/$planId': typeof AppBuilderPlanIdRoute
-  '/settings/danger': typeof AppSettingsDangerRoute
+  '/settings/billing': typeof AppSettingsBillingRoute
   '/settings/general': typeof AppSettingsGeneralRoute
   '/settings/integrations': typeof AppSettingsIntegrationsRoute
   '/settings/notifications': typeof AppSettingsNotificationsRoute
@@ -182,7 +182,7 @@ export interface FileRoutesByTo {
   '/auth/signup': typeof AuthSignupRoute
   '/': typeof AppIndexRoute
   '/builder/$planId': typeof AppBuilderPlanIdRoute
-  '/settings/danger': typeof AppSettingsDangerRoute
+  '/settings/billing': typeof AppSettingsBillingRoute
   '/settings/general': typeof AppSettingsGeneralRoute
   '/settings/integrations': typeof AppSettingsIntegrationsRoute
   '/settings/notifications': typeof AppSettingsNotificationsRoute
@@ -207,7 +207,7 @@ export interface FileRoutesById {
   '/auth/signup': typeof AuthSignupRoute
   '/_app/': typeof AppIndexRoute
   '/_app/builder/$planId': typeof AppBuilderPlanIdRoute
-  '/_app/settings/danger': typeof AppSettingsDangerRoute
+  '/_app/settings/billing': typeof AppSettingsBillingRoute
   '/_app/settings/general': typeof AppSettingsGeneralRoute
   '/_app/settings/integrations': typeof AppSettingsIntegrationsRoute
   '/_app/settings/notifications': typeof AppSettingsNotificationsRoute
@@ -232,7 +232,7 @@ export interface FileRouteTypes {
     | '/auth/login'
     | '/auth/signup'
     | '/builder/$planId'
-    | '/settings/danger'
+    | '/settings/billing'
     | '/settings/general'
     | '/settings/integrations'
     | '/settings/notifications'
@@ -254,7 +254,7 @@ export interface FileRouteTypes {
     | '/auth/signup'
     | '/'
     | '/builder/$planId'
-    | '/settings/danger'
+    | '/settings/billing'
     | '/settings/general'
     | '/settings/integrations'
     | '/settings/notifications'
@@ -278,7 +278,7 @@ export interface FileRouteTypes {
     | '/auth/signup'
     | '/_app/'
     | '/_app/builder/$planId'
-    | '/_app/settings/danger'
+    | '/_app/settings/billing'
     | '/_app/settings/general'
     | '/_app/settings/integrations'
     | '/_app/settings/notifications'
@@ -433,11 +433,11 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppSettingsGeneralRouteImport
       parentRoute: typeof AppSettingsRoute
     }
-    '/_app/settings/danger': {
-      id: '/_app/settings/danger'
-      path: '/danger'
-      fullPath: '/settings/danger'
-      preLoaderRoute: typeof AppSettingsDangerRouteImport
+    '/_app/settings/billing': {
+      id: '/_app/settings/billing'
+      path: '/billing'
+      fullPath: '/settings/billing'
+      preLoaderRoute: typeof AppSettingsBillingRouteImport
       parentRoute: typeof AppSettingsRoute
     }
     '/_app/builder/$planId': {
@@ -451,7 +451,7 @@ declare module '@tanstack/react-router' {
 }
 
 interface AppSettingsRouteChildren {
-  AppSettingsDangerRoute: typeof AppSettingsDangerRoute
+  AppSettingsBillingRoute: typeof AppSettingsBillingRoute
   AppSettingsGeneralRoute: typeof AppSettingsGeneralRoute
   AppSettingsIntegrationsRoute: typeof AppSettingsIntegrationsRoute
   AppSettingsNotificationsRoute: typeof AppSettingsNotificationsRoute
@@ -459,7 +459,7 @@ interface AppSettingsRouteChildren {
 }
 
 const AppSettingsRouteChildren: AppSettingsRouteChildren = {
-  AppSettingsDangerRoute: AppSettingsDangerRoute,
+  AppSettingsBillingRoute: AppSettingsBillingRoute,
   AppSettingsGeneralRoute: AppSettingsGeneralRoute,
   AppSettingsIntegrationsRoute: AppSettingsIntegrationsRoute,
   AppSettingsNotificationsRoute: AppSettingsNotificationsRoute,
