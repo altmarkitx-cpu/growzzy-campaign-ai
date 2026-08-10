@@ -1,31 +1,27 @@
-import { createFileRoute, useNavigate } from "@tanstack/react-router";
-import { useState } from "react";
-import { ChatBuilder } from "@/components/growzzy/chat-builder";
-import { endpoints } from "@/lib/api";
-import { toast } from "sonner";
+import { createFileRoute } from "@tanstack/react-router";
+import { AgentChat } from "@/components/growzzy/agent-chat";
 
 export const Route = createFileRoute("/_app/")({
-  head: () => ({ meta: [{ title: "New Campaign · Growzzy OS" }] }),
+  head: () => ({
+    meta: [
+      { title: "AI Campaign Builder · Growzzy OS" },
+      {
+        name: "description",
+        content:
+          "Describe your offer and Growzzy researches the market, asks what it needs, plans the build and delivers a launch-ready ad campaign with creative.",
+      },
+      { property: "og:title", content: "AI Campaign Builder · Growzzy OS" },
+      {
+        property: "og:description",
+        content: "Research, plan and launch complete ad campaigns from one conversation.",
+      },
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary_large_image" },
+    ],
+  }),
   component: NewCampaignPage,
 });
 
 function NewCampaignPage() {
-  const navigate = useNavigate();
-  const [busy, setBusy] = useState(false);
-
-  const handleSend = async (text: string) => {
-    if (busy) return;
-    setBusy(true);
-    try {
-      const { campaignPlanId } = await endpoints.ai.build(text, {});
-      toast.success("Plan ready — opening builder.");
-      navigate({ to: "/builder/$planId", params: { planId: campaignPlanId } });
-    } catch {
-      // Silent: chat continues; toast handled by ChatBuilder if needed.
-    } finally {
-      setBusy(false);
-    }
-  };
-
-  return <ChatBuilder onSend={handleSend} plan={null} />;
+  return <AgentChat threadId="growzzy-new-campaign" greetingName="Dheekshit" />;
 }
