@@ -16,6 +16,7 @@ import { Route as AppIndexRouteImport } from './routes/_app.index'
 import { Route as AuthSignupRouteImport } from './routes/auth.signup'
 import { Route as AuthLoginRouteImport } from './routes/auth.login'
 import { Route as AuthForgotRouteImport } from './routes/auth.forgot'
+import { Route as ApiChatRouteImport } from './routes/api/chat'
 import { Route as AppStudioRouteImport } from './routes/_app.studio'
 import { Route as AppSettingsRouteImport } from './routes/_app.settings'
 import { Route as AppPromptsRouteImport } from './routes/_app.prompts'
@@ -65,6 +66,11 @@ const AuthForgotRoute = AuthForgotRouteImport.update({
   id: '/forgot',
   path: '/forgot',
   getParentRoute: () => AuthRoute,
+} as any)
+const ApiChatRoute = ApiChatRouteImport.update({
+  id: '/api/chat',
+  path: '/api/chat',
+  getParentRoute: () => rootRouteImport,
 } as any)
 const AppStudioRoute = AppStudioRouteImport.update({
   id: '/studio',
@@ -156,6 +162,7 @@ export interface FileRoutesByFullPath {
   '/prompts': typeof AppPromptsRoute
   '/settings': typeof AppSettingsRouteWithChildren
   '/studio': typeof AppStudioRoute
+  '/api/chat': typeof ApiChatRoute
   '/auth/forgot': typeof AuthForgotRoute
   '/auth/login': typeof AuthLoginRoute
   '/auth/signup': typeof AuthSignupRoute
@@ -177,6 +184,7 @@ export interface FileRoutesByTo {
   '/projects': typeof AppProjectsRoute
   '/prompts': typeof AppPromptsRoute
   '/studio': typeof AppStudioRoute
+  '/api/chat': typeof ApiChatRoute
   '/auth/forgot': typeof AuthForgotRoute
   '/auth/login': typeof AuthLoginRoute
   '/auth/signup': typeof AuthSignupRoute
@@ -202,6 +210,7 @@ export interface FileRoutesById {
   '/_app/prompts': typeof AppPromptsRoute
   '/_app/settings': typeof AppSettingsRouteWithChildren
   '/_app/studio': typeof AppStudioRoute
+  '/api/chat': typeof ApiChatRoute
   '/auth/forgot': typeof AuthForgotRoute
   '/auth/login': typeof AuthLoginRoute
   '/auth/signup': typeof AuthSignupRoute
@@ -228,6 +237,7 @@ export interface FileRouteTypes {
     | '/prompts'
     | '/settings'
     | '/studio'
+    | '/api/chat'
     | '/auth/forgot'
     | '/auth/login'
     | '/auth/signup'
@@ -249,6 +259,7 @@ export interface FileRouteTypes {
     | '/projects'
     | '/prompts'
     | '/studio'
+    | '/api/chat'
     | '/auth/forgot'
     | '/auth/login'
     | '/auth/signup'
@@ -273,6 +284,7 @@ export interface FileRouteTypes {
     | '/_app/prompts'
     | '/_app/settings'
     | '/_app/studio'
+    | '/api/chat'
     | '/auth/forgot'
     | '/auth/login'
     | '/auth/signup'
@@ -289,6 +301,7 @@ export interface RootRouteChildren {
   AppRoute: typeof AppRouteWithChildren
   AuthRoute: typeof AuthRouteWithChildren
   OnboardingRoute: typeof OnboardingRoute
+  ApiChatRoute: typeof ApiChatRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -341,6 +354,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/auth/forgot'
       preLoaderRoute: typeof AuthForgotRouteImport
       parentRoute: typeof AuthRoute
+    }
+    '/api/chat': {
+      id: '/api/chat'
+      path: '/api/chat'
+      fullPath: '/api/chat'
+      preLoaderRoute: typeof ApiChatRouteImport
+      parentRoute: typeof rootRouteImport
     }
     '/_app/studio': {
       id: '/_app/studio'
@@ -518,7 +538,18 @@ const rootRouteChildren: RootRouteChildren = {
   AppRoute: AppRouteWithChildren,
   AuthRoute: AuthRouteWithChildren,
   OnboardingRoute: OnboardingRoute,
+  ApiChatRoute: ApiChatRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
+
+import type { getRouter } from './router.tsx'
+import type { startInstance } from './start.ts'
+declare module '@tanstack/react-start' {
+  interface Register {
+    ssr: true
+    router: Awaited<ReturnType<typeof getRouter>>
+    config: Awaited<ReturnType<typeof startInstance.getOptions>>
+  }
+}
