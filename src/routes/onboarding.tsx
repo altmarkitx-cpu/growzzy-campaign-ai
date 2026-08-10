@@ -9,6 +9,7 @@ import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Check, ChevronDown } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { endpoints } from "@/lib/api";
+import { setBrand, type BrandContext } from "@/lib/brand-store";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/onboarding")({
@@ -19,7 +20,24 @@ export const Route = createFileRoute("/onboarding")({
 function OnboardingPage() {
   const [step, setStep] = useState(2);
   const [googleState, setGoogleState] = useState<"idle" | "connecting" | "syncing" | "connected">("idle");
+  const [workspace, setWorkspace] = useState({
+    businessName: "",
+    website: "",
+    primaryGoal: "sales" as NonNullable<BrandContext["primaryGoal"]>,
+    currency: "USD",
+    productDescription: "",
+  });
   const navigate = useNavigate();
+
+  const saveWorkspace = () => {
+    setBrand({
+      businessName: workspace.businessName,
+      website: workspace.website,
+      primaryGoal: workspace.primaryGoal,
+      currency: workspace.currency,
+      productDescription: workspace.productDescription,
+    });
+  };
 
   const connectGoogle = async () => {
     setGoogleState("connecting");
@@ -50,12 +68,12 @@ function OnboardingPage() {
 
           <StepPill index={2} title="Configure your workspace" active={step === 2} onOpen={() => setStep(2)} done={step > 2}>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-3 pt-2">
-              <div><Label>Business name</Label><Input className="mt-1" /></div>
-              <div><Label>Website URL</Label><Input placeholder="https://" className="mt-1" /></div>
+              <div><Label>Business name</Label><Input className="mt-1" value={workspace.businessName} onChange={(e) => setWorkspace((w) => ({ ...w, businessName: e.target.value }))} /></div>
+              <div><Label>Website URL</Label><Input placeholder="https://" className="mt-1" value={workspace.website} onChange={(e) => setWorkspace((w) => ({ ...w, website: e.target.value }))} /></div>
               <div className="md:col-span-2">
                 <Label>Primary goal</Label>
-                <RadioGroup defaultValue="sales" className="mt-2 grid grid-cols-2 md:grid-cols-4 gap-2">
-                  {[["sales","Sales"],["leads","Leads"],["installs","App installs"],["traffic","Traffic"]].map(([v,l]) => (
+                <RadioGroup value={workspace.primaryGoal} onValueChange={(v) => setWorkspace((w) => ({ ...w, primaryGoal: v as NonNullable<BrandContext["primaryGoal"]> }))} className="mt-2 grid grid-cols-2 md:grid-cols-4 gap-2">
+                  {[["sales","Sales"],["leads","Leads"],["app_installs","App installs"],["traffic","Traffic"]].map(([v,l]) => (
                     <label key={v} className="flex items-center gap-2 rounded-[10px] border border-border px-3 py-2 cursor-pointer has-[:checked]:bg-primary-tint has-[:checked]:border-primary/30">
                       <RadioGroupItem value={v} /><span className="text-[13px]">{l}</span>
                     </label>
@@ -63,7 +81,7 @@ function OnboardingPage() {
                 </RadioGroup>
               </div>
               <div><Label>Currency</Label>
-                <Select defaultValue="USD"><SelectTrigger className="mt-1"><SelectValue /></SelectTrigger><SelectContent><SelectItem value="USD">USD</SelectItem><SelectItem value="EUR">EUR</SelectItem><SelectItem value="INR">INR</SelectItem></SelectContent></Select>
+                <Select value={workspace.currency} onValueChange={(v) => setWorkspace((w) => ({ ...w, currency: v }))}><SelectTrigger className="mt-1"><SelectValue /></SelectTrigger><SelectContent><SelectItem value="USD">USD</SelectItem><SelectItem value="EUR">EUR</SelectItem><SelectItem value="INR">INR</SelectItem></SelectContent></Select>
               </div>
               <div><Label>Timezone</Label>
                 <Select defaultValue="UTC"><SelectTrigger className="mt-1"><SelectValue /></SelectTrigger><SelectContent><SelectItem value="UTC">UTC</SelectItem><SelectItem value="America/New_York">New York</SelectItem></SelectContent></Select>
@@ -75,10 +93,10 @@ function OnboardingPage() {
               </div>
               <div className="md:col-span-2">
                 <Label>Short product description</Label>
-                <Textarea rows={3} className="mt-1" placeholder="Used by the AI to write your campaigns" />
+                <Textarea rows={3} className="mt-1" placeholder="Used by the AI to write your campaigns" value={workspace.productDescription} onChange={(e) => setWorkspace((w) => ({ ...w, productDescription: e.target.value }))} />
               </div>
               <div className="md:col-span-2 flex justify-end">
-                <Button onClick={() => setStep(3)}>Continue</Button>
+                <Button onClick={() => { saveWorkspace(); setStep(3); }}>Continue</Button>
               </div>
             </div>
           </StepPill>
@@ -104,8 +122,8 @@ function OnboardingPage() {
               </div>
 
               <div className="flex items-center justify-between pt-2">
-                <Button variant="ghost" onClick={() => navigate({ to: "/" })}>I'll connect later</Button>
-                <Button onClick={() => navigate({ to: "/" })}>Create your first campaign</Button>
+                <Button variant="ghost" onClick={() => { saveWorkspace(); navigate({ to: "/" }); }}>I'll connect later</Button>
+                <Button onClick={() => { saveWorkspace(); navigate({ to: "/" }); }}>Create your first campaign</Button>
               </div>
             </div>
           </StepPill>

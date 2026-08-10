@@ -27,16 +27,19 @@ import {
 import { Shimmer } from "@/components/ai-elements/shimmer";
 import { Tool, ToolContent, ToolHeader, ToolInput, ToolOutput } from "@/components/ai-elements/tool";
 import { StatusPill } from "@/components/growzzy/status-pill";
+import { useBrand, getBrand, brandToPromptContext, hasBrandContext } from "@/lib/brand-store";
 import logoAsset from "@/assets/growzzy-logo.png.asset.json";
 import {
   Check,
   CircleDot,
+  Globe,
   Image as ImageIcon,
   ListChecks,
   Megaphone,
   MessageCircleQuestion,
   Rocket,
   Search,
+  Sparkles,
   Target,
   Wand2,
 } from "lucide-react";
@@ -102,6 +105,40 @@ const suggestions = [
   },
 ];
 
+/** Suggestions tailored to the saved brand so they feel specific, not generic. */
+function brandSuggestions(brand: ReturnType<typeof getBrand>) {
+  const name = brand.businessName?.trim() || "my business";
+  const cur = brand.currency || "USD";
+  const budget = cur === "INR" ? "₹2,000/day" : cur === "EUR" ? "€60/day" : "$60/day";
+  const list: { icon: typeof Target; title: string; text: string }[] = [];
+
+  if (brand.website?.trim()) {
+    list.push({
+      icon: Globe,
+      title: "Analyze my website",
+      text: `Deeply analyze ${brand.website.trim()} and build a Google Ads campaign around what you find`,
+    });
+  }
+  list.push({
+    icon: Target,
+    title: brand.primaryGoal === "leads" ? "Get more leads" : "Launch a campaign",
+    text: `Launch a Google Ads campaign for ${name} to drive ${
+      brand.primaryGoal === "leads" ? "qualified leads" : brand.primaryGoal === "traffic" ? "website traffic" : "sales"
+    }, budget ${budget}`,
+  });
+  list.push({
+    icon: Wand2,
+    title: "Creative + copy pack",
+    text: `Write a full ad creative and copy pack for ${name} in our brand voice`,
+  });
+  list.push({
+    icon: Rocket,
+    title: "Scale what works",
+    text: `My CPA is rising — rebuild ${name}'s campaign around high-intent keywords`,
+  });
+  return list.slice(0, 4);
+}
+
 export interface AgentChatProps {
   threadId?: string;
   greetingName?: string;
@@ -109,10 +146,19 @@ export interface AgentChatProps {
 
 export function AgentChat({ threadId = "growzzy-agent", greetingName = "there" }: AgentChatProps) {
   const [input, setInput] = useState("");
+  const brand = useBrand();
+  const brandReady = hasBrandContext(brand);
 
   const { messages, sendMessage, addToolResult, status } = useChat({
     id: threadId,
-    transport: new DefaultChatTransport({ api: "/api/chat" }),
+    transport: new DefaultChatTransport({
+      api: "/api/chat",
+      // Inject the latest saved brand profile with every request so the agent
+      // already knows the business instead of asking for it.
+      prepareSendMessagesRequest: ({ messages, body }) => ({
+        body: { ...body, messages, brandContext: brandToPromptContext(getBrand()) },
+      }),
+    }),
     sendAutomaticallyWhen: lastAssistantMessageIsCompleteWithToolCalls,
     onError: (e) => toast.error(e.message || "Growzzy couldn't answer — try again."),
   });
@@ -149,12 +195,30 @@ export function AgentChat({ threadId = "growzzy-agent", greetingName = "there" }
           <h1 className="text-[34px] font-semibold tracking-tight text-foreground">
             Hello, {greetingName}
           </h1>
-          <p className="mt-2 max-w-md text-center text-[14px] text-muted-foreground">
-            Tell me what you want to advertise. I'll research it, ask what I'm unsure about, plan the
-            build, then hand you a launch-ready campaign — creative included.
-          </p>
+          {brandReady ? (
+            <>
+              <span className="mt-3 inline-flex items-center gap-1.5 rounded-full border border-primary/20 bg-primary-tint px-3 py-1 text-[12px] font-medium text-primary">
+                <Sparkles className="h-3 w-3" />
+                Building for {brand.businessName || "your brand"}
+              </span>
+              <p className="mt-3 max-w-md text-center text-[14px] text-muted-foreground">
+                I already know your brand from <span className="font-medium text-foreground">My Brand</span>.
+                Just tell me the goal, budget or offer — I'll research, plan and deliver a launch-ready
+                campaign, creative included.
+              </p>
+            </>
+          ) : (
+            <p className="mt-2 max-w-md text-center text-[14px] text-muted-foreground">
+              Tell me what you want to advertise. I'll research it, ask what I'm unsure about, plan the
+              build, then hand you a launch-ready campaign — creative included.{" "}
+              <a href="/brand" className="font-medium text-primary hover:underline">
+                Set up My Brand
+              </a>{" "}
+              so I never have to ask what you sell.
+            </p>
+          )}
           <div className="mt-8 grid w-full max-w-3xl grid-cols-1 gap-2.5 sm:grid-cols-2">
-            {suggestions.map((s) => (
+            {(brandReady ? brandSuggestions(brand) : suggestions).map((s) => (
               <button
                 key={s.title}
                 onClick={() => submit(s.text)}
@@ -257,6 +321,9 @@ function AgentMessage({
                 <PlanCard key={i} part={part as ToolUIPart} addToolResult={addToolResult} />
               );
             }
+            if (name === "analyzeWebsite") {
+              return <AnalyzeSiteCard key={i} part={part as ToolUIPart} />;
+            }
             if (name === "generateCreative") {
               return <CreativeCard key={i} part={part as ToolUIPart} />;
             }
@@ -273,6 +340,50 @@ function AgentMessage({
 }
 
 /* ------------------------------- tool cards -------------------------------- */
+
+function AnalyzeSiteCard({ part }: { part: ToolUIPart }) {
+  const input = part.input as { url?: string } | undefined;
+  const output = part.output as
+    | { ok?: boolean; title?: string; analysis?: string; error?: string }
+    | undefined;
+  const running = part.state !== "output-available" && part.state !== "output-error";
+  const failed = output?.ok === false;
+
+  return (
+    <div className="rounded-[12px] border border-border bg-card p-4">
+      <div className="flex items-center gap-2">
+        <span className="grid h-7 w-7 place-items-center rounded-lg bg-primary-tint text-primary">
+          <Globe className="h-3.5 w-3.5" />
+        </span>
+        {running ? (
+          <Shimmer className="text-[13px] font-medium">{`Reading ${input?.url ?? "your website"}…`}</Shimmer>
+        ) : failed ? (
+          <span className="text-[13px] font-medium text-foreground">Couldn't analyze the site</span>
+        ) : (
+          <span className="text-[13px] font-medium text-foreground">
+            Analyzed {output?.title || input?.url || "your website"}
+          </span>
+        )}
+      </div>
+      {input?.url && (
+        <div className="mt-2 truncate text-[11.5px] text-muted-foreground">{input.url}</div>
+      )}
+      {failed && output?.error && (
+        <p className="mt-2 text-[12.5px] text-destructive">{output.error}</p>
+      )}
+      {!failed && output?.analysis && (
+        <Tool defaultOpen className="mt-3 border-0 bg-transparent">
+          <ToolHeader type={`tool-${getToolName(part)}` as ToolUIPart["type"]} state={part.state} />
+          <ToolContent>
+            <div className="px-4 pb-3 text-[12.5px]">
+              <MessageResponse>{output.analysis}</MessageResponse>
+            </div>
+          </ToolContent>
+        </Tool>
+      )}
+    </div>
+  );
+}
 
 function ResearchCard({ part }: { part: ToolUIPart }) {
   const input = part.input as { focus?: string; topics?: string[] } | undefined;

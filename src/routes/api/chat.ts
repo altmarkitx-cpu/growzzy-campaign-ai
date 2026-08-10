@@ -1,24 +1,40 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { convertToModelMessages, streamText, stepCountIs, tool, generateText, type UIMessage } from "ai";
 import { z } from "zod";
-import { createLovableAiGatewayProvider, generateAdImage, CHAT_MODEL } from "@/lib/ai-gateway.server";
+import {
+  createLovableAiGatewayProvider,
+  generateAdImage,
+  analyzeWebsite,
+  CHAT_MODEL,
+} from "@/lib/ai-gateway.server";
 
-const SYSTEM = `You are Growzzy, an autonomous ad-campaign strategist inside the Growzzy OS platform.
+const BASE_SYSTEM = `You are Growzzy, an autonomous ad-campaign strategist inside the Growzzy OS platform. Growzzy builds Google Ads campaigns (Meta support is coming soon, so default to Google Ads unless the user explicitly asks otherwise).
 
-Your job: turn a short business request into a complete, launch-ready ad campaign.
+Your job: turn a business request into a complete, launch-ready ad campaign.
 
 Workflow — follow it strictly, one tool at a time:
-1. ANALYSE the request. Decide what is genuinely missing (offer, audience, geography, budget, platform, landing page, tone).
-2. If anything material is unclear or ambiguous, call askUser ONCE with 2–4 short, question-wise doubts. Give 2–4 concrete options per question plus a recommended one. Never ask about things the user already told you. If the brief is fully clear, skip this step.
-3. Call research with the focus areas you need to understand (market, competitors, keywords, creative angles, benchmarks). Use the returned notes in your reasoning.
-4. Call proposePlan with a step-by-step execution plan (4–7 steps) for building the campaign, and wait for the user's approval. Do not build anything before approval.
-5. After approval: call generateCreative once (a vivid, brand-appropriate ad visual prompt), then call deliverCampaign with the complete campaign package.
-6. Finish with a short markdown summary (use tables for ad copy variations) and 2–3 next-step suggestions.
+1. ANALYSE the request together with the BRAND CONTEXT below. The brand context is the source of truth for the business, product, audience and tone — treat it as already answered and NEVER ask the user to re-state anything it already contains (do not ask what the business is, what they sell, or who their customer is when that is provided).
+2. If the user gives a website URL (or one is in the brand context) and you don't already have a deep analysis of it, call analyzeWebsite to fetch and study the real site before planning.
+3. Only if something genuinely material is still missing (e.g. budget, geography, campaign goal, landing page), call askUser ONCE with 1–3 short, question-wise doubts, each with 2–4 concrete options plus a recommended one. If everything needed is known, skip this step entirely.
+4. Call research for market, competitors, keywords, creative angles and benchmarks. Use the returned notes in your reasoning.
+5. Call proposePlan with a step-by-step execution plan (4–7 steps) and wait for the user's approval. Do not build anything before approval.
+6. After approval: call generateCreative once (a vivid, brand-appropriate ad visual prompt), then call deliverCampaign with the complete campaign package.
+7. Finish with a short markdown summary (use tables for ad copy variations) and 2–3 next-step suggestions.
 
 Rules:
 - Be concise and concrete. No filler, no restating the brief.
+- Respect the brand's tone of voice in all ad copy.
 - Never invent platform metrics as facts; frame benchmarks as estimates.
-- All money figures use the user's currency if stated, otherwise USD.`;
+- All money figures use the brand/user currency if stated, otherwise USD.`;
+
+const NO_BRAND_NOTE = `\n\nBRAND CONTEXT: none saved yet. The user has not filled in "My Brand", so infer what you can from their message and ask for what is genuinely missing.`;
+
+function buildSystem(brandContext?: string | null): string {
+  if (brandContext && brandContext.trim()) {
+    return `${BASE_SYSTEM}\n\n--- BRAND CONTEXT (the user's saved business profile) ---\n${brandContext.trim()}\n--- END BRAND CONTEXT ---`;
+  }
+  return BASE_SYSTEM + NO_BRAND_NOTE;
+}
 
 const questionSchema = z.object({
   questions: z
@@ -57,7 +73,10 @@ export const Route = createFileRoute("/api/chat")({
   server: {
     handlers: {
       POST: async ({ request }) => {
-        const { messages } = (await request.json()) as { messages?: UIMessage[] };
+        const { messages, brandContext } = (await request.json()) as {
+          messages?: UIMessage[];
+          brandContext?: string | null;
+        };
         if (!Array.isArray(messages)) return new Response("Messages are required", { status: 400 });
 
         const apiKey = process.env["LOVABLE_API_KEY"];
@@ -68,10 +87,24 @@ export const Route = createFileRoute("/api/chat")({
 
         const result = streamText({
           model,
-          system: SYSTEM,
+          system: buildSystem(brandContext),
           messages: await convertToModelMessages(stripCreativeImages(messages)),
           stopWhen: stepCountIs(50),
           tools: {
+            analyzeWebsite: tool({
+              description:
+                "Fetch the user's real website and produce a grounded analysis of their business, offer, audience, positioning, competitors, ad angles and keywords. Use before planning when a URL is available.",
+              inputSchema: z.object({
+                url: z.string().describe("the website URL to analyse"),
+              }),
+              execute: async ({ url }) => {
+                const { result: analysis, error } = await analyzeWebsite(apiKey, url);
+                if (error || !analysis) {
+                  return { url, ok: false, error: error ?? "Analysis failed." };
+                }
+                return { url: analysis.url, ok: true, title: analysis.title, analysis: analysis.analysis };
+              },
+            }),
             research: tool({
               description:
                 "Research the market, audience, competitors, keywords and creative angles for the brief. Returns concise notes.",

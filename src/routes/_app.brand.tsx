@@ -4,11 +4,11 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { endpoints } from "@/lib/api";
+import { getBrand, setBrand, type BrandContext, type BrandPalette } from "@/lib/brand-store";
 import { toast } from "sonner";
-import { useState } from "react";
-import { Upload, Sparkles, Check } from "lucide-react";
+import { useEffect, useState } from "react";
+import { Upload, Sparkles, Check, Globe, Loader2 } from "lucide-react";
+import { MessageResponse } from "@/components/ai-elements/message";
 import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/_app/brand")({
@@ -16,7 +16,7 @@ export const Route = createFileRoute("/_app/brand")({
   component: BrandPage,
 });
 
-const palettes = [
+const palettes: BrandPalette[] = [
   { name: "Growzzy", primary: "#1F57F5", accent: "#EAF0FE" },
   { name: "Ember", primary: "#F97316", accent: "#FEF0E6" },
   { name: "Forest", primary: "#059669", accent: "#E7F5EF" },
@@ -31,32 +31,83 @@ const tones = [
   { value: "premium", label: "Premium", sample: "Crafted for those who notice the details." },
 ];
 
-function BrandPage() {
-  const [form, setForm] = useState({
-    businessName: "",
-    website: "",
-    industry: "",
-    tone: "friendly",
-    productDescription: "",
-    defaultLandingPage: "",
-    audience: "",
-  });
-  const [palette, setPalette] = useState(palettes[0]);
-  const [saving, setSaving] = useState(false);
+type FormState = Pick<
+  BrandContext,
+  "businessName" | "website" | "industry" | "tone" | "productDescription" | "defaultLandingPage" | "audience"
+>;
 
-  const save = async () => {
+const EMPTY_FORM: FormState = {
+  businessName: "",
+  website: "",
+  industry: "",
+  tone: "friendly",
+  productDescription: "",
+  defaultLandingPage: "",
+  audience: "",
+};
+
+function BrandPage() {
+  const [form, setForm] = useState<FormState>(EMPTY_FORM);
+  const [palette, setPalette] = useState<BrandPalette>(palettes[0]);
+  const [saving, setSaving] = useState(false);
+  const [analyzing, setAnalyzing] = useState(false);
+  const [analysis, setAnalysis] = useState<string | undefined>(undefined);
+
+  // Hydrate from the saved brand on the client (avoids SSR hydration mismatch).
+  useEffect(() => {
+    const b = getBrand();
+    setForm({
+      businessName: b.businessName,
+      website: b.website,
+      industry: b.industry,
+      tone: b.tone,
+      productDescription: b.productDescription,
+      defaultLandingPage: b.defaultLandingPage,
+      audience: b.audience,
+    });
+    if (b.palette) setPalette(b.palette);
+    setAnalysis(b.websiteAnalysis);
+  }, []);
+
+  const save = () => {
     setSaving(true);
     try {
-      await endpoints.workspace.updateBrand(form);
+      setBrand({ ...form, palette });
       toast.success("Brand kit saved. Growzzy will use it on every new campaign.");
-    } catch (e) {
-      toast.error((e as { message?: string })?.message ?? "Couldn't save right now.");
     } finally {
       setSaving(false);
     }
   };
 
-  const set = (k: keyof typeof form) => (v: string) => setForm((f) => ({ ...f, [k]: v }));
+  const analyzeSite = async () => {
+    const url = form.website.trim();
+    if (!url) {
+      toast.error("Add your website URL first.");
+      return;
+    }
+    setAnalyzing(true);
+    try {
+      const res = await fetch("/api/analyze-site", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ url }),
+      });
+      const data = (await res.json()) as { analysis?: string; error?: string; analyzedAt?: string };
+      if (!res.ok || !data.analysis) {
+        toast.error(data.error ?? "Couldn't analyze that site.");
+        return;
+      }
+      setAnalysis(data.analysis);
+      setBrand({ ...form, palette, websiteAnalysis: data.analysis, websiteAnalyzedAt: data.analyzedAt });
+      toast.success("Website analyzed. Growzzy now understands your business.");
+    } catch {
+      toast.error("Couldn't reach the analyzer — try again.");
+    } finally {
+      setAnalyzing(false);
+    }
+  };
+
+  const set = (k: keyof FormState) => (v: string) => setForm((f) => ({ ...f, [k]: v }));
   const tone = tones.find((t) => t.value === form.tone) ?? tones[0];
 
   return (
@@ -87,12 +138,33 @@ function BrandPage() {
               </div>
               <div className="flex-1 grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div><Label className="text-[12px]">Business name</Label><Input value={form.businessName} onChange={(e) => set("businessName")(e.target.value)} className="mt-1" placeholder="Growzzy" /></div>
-                <div><Label className="text-[12px]">Website</Label><Input placeholder="https://" value={form.website} onChange={(e) => set("website")(e.target.value)} className="mt-1" /></div>
+                <div>
+                  <Label className="text-[12px]">Website</Label>
+                  <div className="mt-1 flex gap-2">
+                    <Input placeholder="https://" value={form.website} onChange={(e) => set("website")(e.target.value)} />
+                    <Button type="button" variant="outline" onClick={analyzeSite} disabled={analyzing} className="shrink-0 gap-1.5">
+                      {analyzing ? <Loader2 className="h-4 w-4 animate-spin" /> : <Globe className="h-4 w-4" />}
+                      {analyzing ? "Reading…" : "Analyze"}
+                    </Button>
+                  </div>
+                </div>
                 <div><Label className="text-[12px]">Industry</Label><Input value={form.industry} onChange={(e) => set("industry")(e.target.value)} className="mt-1" placeholder="e.g. Fashion, SaaS" /></div>
                 <div><Label className="text-[12px]">Default landing page</Label><Input placeholder="https://" value={form.defaultLandingPage} onChange={(e) => set("defaultLandingPage")(e.target.value)} className="mt-1" /></div>
               </div>
             </div>
           </SectionCard>
+
+          {analysis && (
+            <SectionCard title="Website analysis">
+              <div className="flex items-center gap-2 mb-2 text-[12px] text-muted-foreground">
+                <Sparkles className="h-3.5 w-3.5 text-primary" />
+                Growzzy read your real site — this context is attached to every campaign.
+              </div>
+              <div className="rounded-[10px] border border-border bg-background p-3.5 text-[12.5px] max-h-80 overflow-auto">
+                <MessageResponse>{analysis}</MessageResponse>
+              </div>
+            </SectionCard>
+          )}
 
           <SectionCard title="Colors">
             <div className="flex flex-wrap gap-2">

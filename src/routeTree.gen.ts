@@ -17,6 +17,7 @@ import { Route as AuthSignupRouteImport } from './routes/auth.signup'
 import { Route as AuthLoginRouteImport } from './routes/auth.login'
 import { Route as AuthForgotRouteImport } from './routes/auth.forgot'
 import { Route as ApiChatRouteImport } from './routes/api/chat'
+import { Route as ApiAnalyzeSiteRouteImport } from './routes/api/analyze-site'
 import { Route as AppStudioRouteImport } from './routes/_app.studio'
 import { Route as AppSettingsRouteImport } from './routes/_app.settings'
 import { Route as AppPromptsRouteImport } from './routes/_app.prompts'
@@ -70,6 +71,11 @@ const AuthForgotRoute = AuthForgotRouteImport.update({
 const ApiChatRoute = ApiChatRouteImport.update({
   id: '/api/chat',
   path: '/api/chat',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiAnalyzeSiteRoute = ApiAnalyzeSiteRouteImport.update({
+  id: '/api/analyze-site',
+  path: '/api/analyze-site',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AppStudioRoute = AppStudioRouteImport.update({
@@ -162,6 +168,7 @@ export interface FileRoutesByFullPath {
   '/prompts': typeof AppPromptsRoute
   '/settings': typeof AppSettingsRouteWithChildren
   '/studio': typeof AppStudioRoute
+  '/api/analyze-site': typeof ApiAnalyzeSiteRoute
   '/api/chat': typeof ApiChatRoute
   '/auth/forgot': typeof AuthForgotRoute
   '/auth/login': typeof AuthLoginRoute
@@ -184,6 +191,7 @@ export interface FileRoutesByTo {
   '/projects': typeof AppProjectsRoute
   '/prompts': typeof AppPromptsRoute
   '/studio': typeof AppStudioRoute
+  '/api/analyze-site': typeof ApiAnalyzeSiteRoute
   '/api/chat': typeof ApiChatRoute
   '/auth/forgot': typeof AuthForgotRoute
   '/auth/login': typeof AuthLoginRoute
@@ -210,6 +218,7 @@ export interface FileRoutesById {
   '/_app/prompts': typeof AppPromptsRoute
   '/_app/settings': typeof AppSettingsRouteWithChildren
   '/_app/studio': typeof AppStudioRoute
+  '/api/analyze-site': typeof ApiAnalyzeSiteRoute
   '/api/chat': typeof ApiChatRoute
   '/auth/forgot': typeof AuthForgotRoute
   '/auth/login': typeof AuthLoginRoute
@@ -237,6 +246,7 @@ export interface FileRouteTypes {
     | '/prompts'
     | '/settings'
     | '/studio'
+    | '/api/analyze-site'
     | '/api/chat'
     | '/auth/forgot'
     | '/auth/login'
@@ -259,6 +269,7 @@ export interface FileRouteTypes {
     | '/projects'
     | '/prompts'
     | '/studio'
+    | '/api/analyze-site'
     | '/api/chat'
     | '/auth/forgot'
     | '/auth/login'
@@ -284,6 +295,7 @@ export interface FileRouteTypes {
     | '/_app/prompts'
     | '/_app/settings'
     | '/_app/studio'
+    | '/api/analyze-site'
     | '/api/chat'
     | '/auth/forgot'
     | '/auth/login'
@@ -301,6 +313,7 @@ export interface RootRouteChildren {
   AppRoute: typeof AppRouteWithChildren
   AuthRoute: typeof AuthRouteWithChildren
   OnboardingRoute: typeof OnboardingRoute
+  ApiAnalyzeSiteRoute: typeof ApiAnalyzeSiteRoute
   ApiChatRoute: typeof ApiChatRoute
 }
 
@@ -360,6 +373,13 @@ declare module '@tanstack/react-router' {
       path: '/api/chat'
       fullPath: '/api/chat'
       preLoaderRoute: typeof ApiChatRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/analyze-site': {
+      id: '/api/analyze-site'
+      path: '/api/analyze-site'
+      fullPath: '/api/analyze-site'
+      preLoaderRoute: typeof ApiAnalyzeSiteRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/_app/studio': {
@@ -538,6 +558,7 @@ const rootRouteChildren: RootRouteChildren = {
   AppRoute: AppRouteWithChildren,
   AuthRoute: AuthRouteWithChildren,
   OnboardingRoute: OnboardingRoute,
+  ApiAnalyzeSiteRoute: ApiAnalyzeSiteRoute,
   ApiChatRoute: ApiChatRoute,
 }
 export const routeTree = rootRouteImport
