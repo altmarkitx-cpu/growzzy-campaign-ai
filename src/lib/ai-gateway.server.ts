@@ -1,10 +1,25 @@
 import { createOpenAICompatible } from "@ai-sdk/openai-compatible";
-import { generateText } from "ai";
+import { gateway } from "ai";
+import { generateText, type LanguageModel } from "ai";
 
 export const CHAT_MODEL = "google/gemini-2.5-flash";
 export const IMAGE_MODEL = "google/gemini-2.5-flash-image";
 
-export function createLovableAiGatewayProvider(apiKey: string) {
+/**
+ * Resolves which AI backend to use.
+ * - On Lovable's platform, LOVABLE_API_KEY points at Lovable's AI gateway.
+ * - Everywhere else (v0 / Vercel), fall back to the Vercel AI Gateway, which is
+ *   zero-config when AI_GATEWAY_API_KEY is present.
+ */
+export function isAiConfigured(): boolean {
+  return Boolean(process.env["LOVABLE_API_KEY"] || process.env["AI_GATEWAY_API_KEY"]);
+}
+
+function lovableKey(): string | undefined {
+  return process.env["LOVABLE_API_KEY"];
+}
+
+function createLovableProvider(apiKey: string) {
   return createOpenAICompatible({
     name: "lovable-ai-gateway",
     baseURL: "https://ai.gateway.lovable.dev/v1",
@@ -16,32 +31,64 @@ export function createLovableAiGatewayProvider(apiKey: string) {
   });
 }
 
+/** Returns the chat language model for the active backend. */
+export function getChatModel(): LanguageModel {
+  const key = lovableKey();
+  if (key) return createLovableProvider(key)(CHAT_MODEL);
+  // Vercel AI Gateway (uses AI_GATEWAY_API_KEY automatically).
+  return gateway(CHAT_MODEL);
+}
+
 /** Generates one ad creative image and returns it as a data URL. */
-export async function generateAdImage(apiKey: string, prompt: string): Promise<{ url: string | null; error?: string }> {
-  const res = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      "Lovable-API-Key": apiKey,
-      "X-Lovable-AIG-SDK": "fetch",
-    },
-    body: JSON.stringify({
-      model: IMAGE_MODEL,
-      messages: [{ role: "user", content: prompt }],
-      modalities: ["image", "text"],
-    }),
-  });
-  if (!res.ok) {
-    const detail = await res.text().catch(() => "");
-    console.error("[growzzy] image generation failed", res.status, detail.slice(0, 300));
-    return { url: null, error: `Image service returned ${res.status}` };
+export async function generateAdImage(prompt: string): Promise<{ url: string | null; error?: string }> {
+  const key = lovableKey();
+
+  // Lovable path: their chat-completions endpoint returns an image on the message.
+  if (key) {
+    const res = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "Lovable-API-Key": key,
+        "X-Lovable-AIG-SDK": "fetch",
+      },
+      body: JSON.stringify({
+        model: IMAGE_MODEL,
+        messages: [{ role: "user", content: prompt }],
+        modalities: ["image", "text"],
+      }),
+    });
+    if (!res.ok) {
+      const detail = await res.text().catch(() => "");
+      console.error("[growzzy] image generation failed", res.status, detail.slice(0, 300));
+      return { url: null, error: `Image service returned ${res.status}` };
+    }
+    const data = (await res.json()) as {
+      choices?: { message?: { images?: { image_url?: { url?: string } }[] } }[];
+    };
+    const url = data.choices?.[0]?.message?.images?.[0]?.image_url?.url ?? null;
+    if (!url) console.error("[growzzy] image generation returned no image");
+    return { url, error: url ? undefined : "No image returned" };
   }
-  const data = (await res.json()) as {
-    choices?: { message?: { images?: { image_url?: { url?: string } }[] } }[];
-  };
-  const url = data.choices?.[0]?.message?.images?.[0]?.image_url?.url ?? null;
-  if (!url) console.error("[growzzy] image generation returned no image");
-  return { url, error: url ? undefined : "No image returned" };
+
+  // Vercel AI Gateway path: the image model returns files on the result.
+  try {
+    const { files } = await generateText({
+      model: gateway(IMAGE_MODEL),
+      providerOptions: { google: { responseModalities: ["TEXT", "IMAGE"] } },
+      prompt,
+    });
+    const image = files?.find((f) => f.mediaType?.startsWith("image/"));
+    if (!image) {
+      console.error("[growzzy] image generation returned no image");
+      return { url: null, error: "No image returned" };
+    }
+    const url = `data:${image.mediaType};base64,${image.base64}`;
+    return { url };
+  } catch (e) {
+    console.error("[growzzy] image generation failed", e);
+    return { url: null, error: "Image generation failed" };
+  }
 }
 
 /* --------------------------- website analysis ---------------------------- */
@@ -106,11 +153,11 @@ export interface WebsiteAnalysis {
  * Shared by the /api/analyze-site route and the chat's analyzeWebsite tool.
  */
 export async function analyzeWebsite(
-  apiKey: string,
   rawUrl: string,
 ): Promise<{ result?: WebsiteAnalysis; error?: string; status?: number }> {
   const url = normalizeUrl(rawUrl);
   if (!url) return { error: "Enter a valid website URL first.", status: 400 };
+  if (!isAiConfigured()) return { error: "AI is not configured yet.", status: 500 };
 
   let html = "";
   try {
@@ -136,10 +183,9 @@ export async function analyzeWebsite(
   const { title, description, text } = extractReadable(html);
   const corpus = `URL: ${url}\nTitle: ${title}\nMeta description: ${description}\n\nPage text:\n${text.slice(0, 12000)}`;
 
-  const gateway = createLovableAiGatewayProvider(apiKey);
   try {
     const { text: analysis } = await generateText({
-      model: gateway(CHAT_MODEL),
+      model: getChatModel(),
       system: ANALYSIS_SYSTEM,
       prompt: corpus,
     });

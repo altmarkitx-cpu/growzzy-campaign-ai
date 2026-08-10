@@ -2,10 +2,10 @@ import { createFileRoute } from "@tanstack/react-router";
 import { convertToModelMessages, streamText, stepCountIs, tool, generateText, type UIMessage } from "ai";
 import { z } from "zod";
 import {
-  createLovableAiGatewayProvider,
+  getChatModel,
   generateAdImage,
   analyzeWebsite,
-  CHAT_MODEL,
+  isAiConfigured,
 } from "@/lib/ai-gateway.server";
 
 const BASE_SYSTEM = `You are Growzzy, an autonomous ad-campaign strategist inside the Growzzy OS platform. Growzzy builds Google Ads campaigns (Meta support is coming soon, so default to Google Ads unless the user explicitly asks otherwise).
@@ -79,11 +79,9 @@ export const Route = createFileRoute("/api/chat")({
         };
         if (!Array.isArray(messages)) return new Response("Messages are required", { status: 400 });
 
-        const apiKey = process.env["LOVABLE_API_KEY"];
-        if (!apiKey) return new Response("AI is not configured yet.", { status: 500 });
+        if (!isAiConfigured()) return new Response("AI is not configured yet.", { status: 500 });
 
-        const gateway = createLovableAiGatewayProvider(apiKey);
-        const model = gateway(CHAT_MODEL);
+        const model = getChatModel();
 
         const result = streamText({
           model,
@@ -98,7 +96,7 @@ export const Route = createFileRoute("/api/chat")({
                 url: z.string().describe("the website URL to analyse"),
               }),
               execute: async ({ url }) => {
-                const { result: analysis, error } = await analyzeWebsite(apiKey, url);
+                const { result: analysis, error } = await analyzeWebsite(url);
                 if (error || !analysis) {
                   return { url, ok: false, error: error ?? "Analysis failed." };
                 }
@@ -156,7 +154,6 @@ export const Route = createFileRoute("/api/chat")({
               }),
               execute: async ({ prompt, caption }) => {
                 const { url, error } = await generateAdImage(
-                  apiKey,
                   `High-converting advertising creative, square 1:1, clean commercial photography or modern graphic design, space for a headline, no gibberish text. ${prompt}`,
                 );
                 return url
