@@ -190,7 +190,20 @@ export const Route = createFileRoute("/api/chat")({
           },
         });
 
-        return result.toUIMessageStreamResponse({ originalMessages: messages });
+        return result.toUIMessageStreamResponse({
+          originalMessages: messages,
+          onError: (error) => {
+            const raw = error instanceof Error ? error.message : String(error);
+            console.log("[v0] chat stream error:", raw);
+            if (/credit card|valid credit card|billing/i.test(raw)) {
+              return "AI Gateway needs billing enabled. Add a credit card to your Vercel team's AI Gateway (Vercel → AI → Add card) to unlock free credits, then try again.";
+            }
+            if (/quota|rate limit|429/i.test(raw)) {
+              return "The AI provider is rate-limited right now. Please try again in a moment.";
+            }
+            return `Growzzy couldn't reach the AI model: ${raw}`;
+          },
+        });
       },
     },
   },
