@@ -63,43 +63,84 @@ export const Route = createFileRoute("/api/chat")({
   server: {
     handlers: {
       POST: async ({ request }) => {
-        const { messages } = (await request.json()) as { messages?: UIMessage[] };
+        const { messages, brandContext } = (await request.json()) as {
+          messages?: UIMessage[];
+          brandContext?: string;
+        };
         if (!Array.isArray(messages)) return new Response("Messages are required", { status: 400 });
 
         const apiKey = process.env["LOVABLE_API_KEY"];
         if (!apiKey) return new Response("AI is not configured yet.", { status: 500 });
 
+        const { webSearch, fetchPageText } = await import("@/lib/research.server");
+
         const gateway = createLovableAiGatewayProvider(apiKey);
         const model = gateway(CHAT_MODEL);
 
+        const brandBlock = brandContext?.trim()
+          ? `\n\n=== BRAND CONTEXT (from the user's My Brand profile — treat as known facts, never ask about it) ===\n${brandContext.trim()}`
+          : `\n\n=== BRAND CONTEXT ===\nEMPTY — the user has not set up My Brand yet. Call requestBrandSetup immediately instead of asking questions about their business.`;
+
         const result = streamText({
           model,
-          system: SYSTEM,
+          system: SYSTEM + brandBlock,
           messages: await convertToModelMessages(stripCreativeImages(messages)),
           stopWhen: stepCountIs(50),
           tools: {
             research: tool({
               description:
-                "Research the market, audience, competitors, keywords and creative angles for the brief. Returns concise notes.",
+                "Run REAL live web research: performs web searches, reads the actual result pages, and returns analysed notes with sources.",
               inputSchema: z.object({
                 focus: z.string().describe("what is being researched, shown to the user"),
                 topics: z.array(z.string()).describe("3-6 research topics"),
+                queries: z
+                  .array(z.string())
+                  .describe("2-5 real web search queries to run, specific to this business"),
               }),
-              execute: async ({ focus, topics }) => {
+              execute: async ({ focus, topics, queries }) => {
+                const searches = await Promise.all(
+                  queries.slice(0, 5).map(async (q) => ({ q, results: await webSearch(q, 5) })),
+                );
+                const urls = [
+                  ...new Set(searches.flatMap((s) => s.results.slice(0, 2).map((r) => r.url))),
+                ].slice(0, 5);
+                const pages = await Promise.all(urls.map((u) => fetchPageText(u, 4000)));
+
+                const evidence = [
+                  ...searches.map(
+                    (s) =>
+                      `SEARCH "${s.q}":\n${s.results
+                        .map((r) => `- ${r.title} (${r.url}): ${r.snippet}`)
+                        .join("\n")}`,
+                  ),
+                  ...pages.map((p, i) => (p ? `PAGE (${urls[i]}):\n${p}` : "")),
+                ]
+                  .filter(Boolean)
+                  .join("\n\n");
+
                 const { text } = await generateText({
                   model,
                   system:
-                    "You are a performance-marketing research analyst. Answer with tight bullet notes only: audience segments, buying triggers, competitor angles, 8-12 high-intent keywords, creative hooks, and realistic CPC/CTR/CPA ranges labelled as estimates.",
-                  prompt: `Focus: ${focus}\nTopics:\n${topics.map((t) => `- ${t}`).join("\n")}`,
+                    "You are a performance-marketing research analyst. You are given REAL search results and REAL page text. Ground every claim in it. Answer with tight bullet notes: audience segments, buying triggers, competitor angles observed, 8-12 high-intent keywords, creative hooks, and realistic CPC/CTR/CPA ranges labelled as estimates. End with a '**Sources**' list of the URLs you actually used. Only Google Ads and Meta Ads exist as channels.",
+                  prompt: `Focus: ${focus}\nTopics:\n${topics.map((t) => `- ${t}`).join("\n")}\n\nEVIDENCE:\n${evidence.slice(0, 50000)}`,
                 });
-                return { focus, notes: text };
+                return { focus, notes: text, sources: urls };
               },
+            }),
+            requestBrandSetup: tool({
+              description:
+                "Use when the brand context is empty. Prompts the user to add their website in My Brand so Growzzy can analyse the business. Takes no further action.",
+              inputSchema: z.object({
+                reason: z.string().describe("one short line on why brand setup is needed"),
+              }),
+              execute: async ({ reason }) => ({ requested: true, reason }),
             }),
             askUser: tool({
               description:
-                "Ask the user your clarifying doubts before planning. The user answers in the UI.",
+                "Ask the user your clarifying doubts before planning. Questions must be specific to their business; platform options may only be Google Ads or Meta Ads. Never ask what the business is.",
               inputSchema: questionSchema,
             }),
+
             proposePlan: tool({
               description:
                 "Show the execution plan and wait for the user to approve it or request changes.",
