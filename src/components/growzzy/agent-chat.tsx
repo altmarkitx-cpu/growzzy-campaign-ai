@@ -172,9 +172,25 @@ export function AgentChat({ threadId = "growzzy-agent", greetingName = "there" }
             Hello, {greetingName}
           </h1>
           <p className="mt-2 max-w-md text-center text-[14px] text-muted-foreground">
-            Tell me what you want to advertise. I'll research it, ask what I'm unsure about, plan the
-            build, then hand you a launch-ready campaign — creative included.
+            {brandReady
+              ? `I already know ${brand.businessName} — your offer, audience and competitors. Just tell me what to launch.`
+              : "Tell me what you want to advertise. I'll research it live, ask only what I can't find, plan the build, then hand you a launch-ready campaign."}
           </p>
+          {!brandReady && (
+            <div className="mt-5 flex w-full max-w-xl items-center justify-between gap-3 rounded-[12px] border border-border bg-warn-bg/50 p-3.5">
+              <span className="text-[12.5px] text-foreground">
+                I don't know your business yet. Add your website in My Brand and I'll analyse it
+                deeply — offer, audience, competitors, keywords.
+              </span>
+              <Link
+                to="/brand"
+                className="shrink-0 rounded-full bg-primary px-3 py-1.5 text-[12px] font-medium text-primary-foreground"
+              >
+                Set up My Brand
+              </Link>
+            </div>
+          )}
+
           <div className="mt-8 grid w-full max-w-3xl grid-cols-1 gap-2.5 sm:grid-cols-2">
             {suggestions.map((s) => (
               <button
