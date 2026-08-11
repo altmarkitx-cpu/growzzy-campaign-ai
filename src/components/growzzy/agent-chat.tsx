@@ -1,4 +1,12 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { Link } from "@tanstack/react-router";
+import {
+  loadBrand,
+  brandIsReady,
+  brandContextText,
+  type BrandProfile,
+} from "@/lib/brand-store";
+
 import { useChat } from "@ai-sdk/react";
 import {
   DefaultChatTransport,
