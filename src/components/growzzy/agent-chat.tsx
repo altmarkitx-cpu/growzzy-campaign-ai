@@ -1,4 +1,12 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { Link } from "@tanstack/react-router";
+import {
+  loadBrand,
+  brandIsReady,
+  brandContextText,
+  type BrandProfile,
+} from "@/lib/brand-store";
+
 import { useChat } from "@ai-sdk/react";
 import {
   DefaultChatTransport,
@@ -109,16 +117,30 @@ export interface AgentChatProps {
 
 export function AgentChat({ threadId = "growzzy-agent", greetingName = "there" }: AgentChatProps) {
   const [input, setInput] = useState("");
+  const [brand, setBrand] = useState<BrandProfile>(() => loadBrand());
+
+  useEffect(() => {
+    const sync = () => setBrand(loadBrand());
+    sync();
+    window.addEventListener("growzzy:brand-updated", sync);
+    return () => window.removeEventListener("growzzy:brand-updated", sync);
+  }, []);
+
+  const brandReady = brandIsReady(brand);
 
   const { messages, sendMessage, addToolResult, status } = useChat({
     id: threadId,
-    transport: new DefaultChatTransport({ api: "/api/chat" }),
+    transport: new DefaultChatTransport({
+      api: "/api/chat",
+      body: () => ({ brandContext: brandContextText(loadBrand()) }),
+    }),
     sendAutomaticallyWhen: lastAssistantMessageIsCompleteWithToolCalls,
     onError: (e) => toast.error(e.message || "Growzzy couldn't answer — try again."),
   });
 
   const busy = status === "submitted" || status === "streaming";
   const started = messages.length > 0;
+
 
   const submit = (text: string) => {
     const value = text.trim();
@@ -150,9 +172,25 @@ export function AgentChat({ threadId = "growzzy-agent", greetingName = "there" }
             Hello, {greetingName}
           </h1>
           <p className="mt-2 max-w-md text-center text-[14px] text-muted-foreground">
-            Tell me what you want to advertise. I'll research it, ask what I'm unsure about, plan the
-            build, then hand you a launch-ready campaign — creative included.
+            {brandReady
+              ? `I already know ${brand.businessName} — your offer, audience and competitors. Just tell me what to launch.`
+              : "Tell me what you want to advertise. I'll research it live, ask only what I can't find, plan the build, then hand you a launch-ready campaign."}
           </p>
+          {!brandReady && (
+            <div className="mt-5 flex w-full max-w-xl items-center justify-between gap-3 rounded-[12px] border border-border bg-warn-bg/50 p-3.5">
+              <span className="text-[12.5px] text-foreground">
+                I don't know your business yet. Add your website in My Brand and I'll analyse it
+                deeply — offer, audience, competitors, keywords.
+              </span>
+              <Link
+                to="/brand"
+                className="shrink-0 rounded-full bg-primary px-3 py-1.5 text-[12px] font-medium text-primary-foreground"
+              >
+                Set up My Brand
+              </Link>
+            </div>
+          )}
+
           <div className="mt-8 grid w-full max-w-3xl grid-cols-1 gap-2.5 sm:grid-cols-2">
             {suggestions.map((s) => (
               <button
@@ -263,6 +301,9 @@ function AgentMessage({
             if (name === "deliverCampaign") {
               return <CampaignCard key={i} part={part as ToolUIPart} />;
             }
+            if (name === "requestBrandSetup") {
+              return <BrandSetupCard key={i} part={part as ToolUIPart} />;
+            }
             // research + anything else
             return <ResearchCard key={i} part={part as ToolUIPart} />;
           })}
@@ -271,6 +312,26 @@ function AgentMessage({
     </Message>
   );
 }
+
+function BrandSetupCard({ part }: { part: ToolUIPart }) {
+  const input = part.input as { reason?: string } | undefined;
+  return (
+    <div className="rounded-[12px] border border-border bg-card p-4">
+      <div className="text-[13px] font-medium text-foreground">I need your brand context first</div>
+      <p className="mt-1 text-[12.5px] text-muted-foreground">
+        {input?.reason ??
+          "Add your website in My Brand and I'll analyse your business deeply before planning anything."}
+      </p>
+      <Link
+        to="/brand"
+        className="mt-3 inline-flex rounded-full bg-primary px-3 py-1.5 text-[12px] font-medium text-primary-foreground"
+      >
+        Analyse my website
+      </Link>
+    </div>
+  );
+}
+
 
 /* ------------------------------- tool cards -------------------------------- */
 
