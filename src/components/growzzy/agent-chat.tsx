@@ -109,16 +109,30 @@ export interface AgentChatProps {
 
 export function AgentChat({ threadId = "growzzy-agent", greetingName = "there" }: AgentChatProps) {
   const [input, setInput] = useState("");
+  const [brand, setBrand] = useState<BrandProfile>(() => loadBrand());
+
+  useEffect(() => {
+    const sync = () => setBrand(loadBrand());
+    sync();
+    window.addEventListener("growzzy:brand-updated", sync);
+    return () => window.removeEventListener("growzzy:brand-updated", sync);
+  }, []);
+
+  const brandReady = brandIsReady(brand);
 
   const { messages, sendMessage, addToolResult, status } = useChat({
     id: threadId,
-    transport: new DefaultChatTransport({ api: "/api/chat" }),
+    transport: new DefaultChatTransport({
+      api: "/api/chat",
+      body: () => ({ brandContext: brandContextText(loadBrand()) }),
+    }),
     sendAutomaticallyWhen: lastAssistantMessageIsCompleteWithToolCalls,
     onError: (e) => toast.error(e.message || "Growzzy couldn't answer — try again."),
   });
 
   const busy = status === "submitted" || status === "streaming";
   const started = messages.length > 0;
+
 
   const submit = (text: string) => {
     const value = text.trim();
