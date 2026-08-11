@@ -4,15 +4,32 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { endpoints } from "@/lib/api";
 import { toast } from "sonner";
-import { useState } from "react";
-import { Upload, Sparkles, Check } from "lucide-react";
+import { useEffect, useState } from "react";
+import { Sparkles, Check, Globe, Loader2, ExternalLink } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { useServerFn } from "@tanstack/react-start";
+import { analyzeBrandSite } from "@/lib/brand.functions";
+import { loadBrand, saveBrand, brandIsReady, emptyBrand, type BrandProfile } from "@/lib/brand-store";
 
 export const Route = createFileRoute("/_app/brand")({
-  head: () => ({ meta: [{ title: "My Brand · Growzzy OS" }] }),
+  head: () => ({
+    meta: [
+      { title: "My Brand · Growzzy OS" },
+      {
+        name: "description",
+        content:
+          "Add your website once — Growzzy analyses your business, offer, audience and competitors, then uses it in every campaign.",
+      },
+      { property: "og:title", content: "My Brand · Growzzy OS" },
+      {
+        property: "og:description",
+        content: "Your brand context: offer, audience, competitors and keywords, analysed from your live website.",
+      },
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary_large_image" },
+    ],
+  }),
   component: BrandPage,
 });
 
@@ -27,79 +44,264 @@ const palettes = [
 const tones = [
   { value: "friendly", label: "Friendly", sample: "Hey! Grab yours before they're gone ✨" },
   { value: "professional", label: "Professional", sample: "Trusted by 10,000+ businesses worldwide." },
-  { value: "playful", label: "Playful", sample: "Warning: dangerously good jewellery inside 💎" },
+  { value: "playful", label: "Playful", sample: "Warning: dangerously good products inside 💎" },
   { value: "premium", label: "Premium", sample: "Crafted for those who notice the details." },
 ];
 
-function BrandPage() {
-  const [form, setForm] = useState({
-    businessName: "",
-    website: "",
-    industry: "",
-    tone: "friendly",
-    productDescription: "",
-    defaultLandingPage: "",
-    audience: "",
-  });
-  const [palette, setPalette] = useState(palettes[0]);
-  const [saving, setSaving] = useState(false);
+function Chips({ items }: { items: string[] }) {
+  return (
+    <div className="flex flex-wrap gap-1.5">
+      {items.map((t) => (
+        <span
+          key={t}
+          className="rounded-full border border-border bg-background px-2 py-0.5 text-[11.5px] text-muted-foreground"
+        >
+          {t}
+        </span>
+      ))}
+    </div>
+  );
+}
 
-  const save = async () => {
-    setSaving(true);
+function BrandPage() {
+  const [brand, setBrand] = useState<BrandProfile>(emptyBrand);
+  const [urlInput, setUrlInput] = useState("");
+  const [analyzing, setAnalyzing] = useState(false);
+  const analyze = useServerFn(analyzeBrandSite);
+
+  useEffect(() => {
+    const loaded = loadBrand();
+    setBrand(loaded);
+    setUrlInput(loaded.website);
+  }, []);
+
+  const set = <K extends keyof BrandProfile>(k: K) => (v: BrandProfile[K]) =>
+    setBrand((b) => ({ ...b, [k]: v }));
+
+  const ready = brandIsReady(brand);
+
+  const runAnalysis = async () => {
+    if (!urlInput.trim()) {
+      toast.error("Add your website URL first.");
+      return;
+    }
+    setAnalyzing(true);
     try {
-      await endpoints.workspace.updateBrand(form);
-      toast.success("Brand kit saved. Growzzy will use it on every new campaign.");
+      const { site, profile } = await analyze({ data: { url: urlInput.trim() } });
+      const next: BrandProfile = {
+        ...brand,
+        website: site,
+        defaultLandingPage: brand.defaultLandingPage || site,
+        businessName: profile.businessName,
+        industry: profile.industry,
+        businessModel: profile.businessModel,
+        whatTheySell: profile.whatTheySell,
+        productDescription: profile.productDescription,
+        positioning: profile.positioning,
+        differentiators: profile.differentiators,
+        audience: profile.audience,
+        segments: profile.segments,
+        competitors: profile.competitors,
+        keywords: profile.keywords,
+        creativeAngles: profile.creativeAngles,
+        tone: profile.tone || brand.tone,
+        analyzedAt: new Date().toISOString(),
+        sources: profile.sources,
+      };
+      setBrand(next);
+      saveBrand(next);
+      toast.success(`Analysed ${profile.businessName}. Growzzy now knows your business.`);
     } catch (e) {
-      toast.error((e as { message?: string })?.message ?? "Couldn't save right now.");
+      toast.error((e as { message?: string })?.message ?? "Couldn't analyse that website.");
     } finally {
-      setSaving(false);
+      setAnalyzing(false);
     }
   };
 
-  const set = (k: keyof typeof form) => (v: string) => setForm((f) => ({ ...f, [k]: v }));
-  const tone = tones.find((t) => t.value === form.tone) ?? tones[0];
+  const save = () => {
+    saveBrand(brand);
+    toast.success("Brand context saved. Growzzy uses it on every campaign.");
+  };
+
+  const tone = tones.find((t) => t.value === brand.tone) ?? tones[0];
+  const palette = palettes.find((p) => p.name === brand.palette.name) ?? palettes[0];
 
   return (
     <div>
       <PageHeader
         title="My Brand"
-        subtitle="Set this once — every campaign Growzzy writes uses your brand."
+        subtitle="Growzzy reads your live website so it never has to ask what your business is."
         actions={
-          <Button onClick={save} disabled={saving} className="gap-1.5">
+          <Button onClick={save} className="gap-1.5">
             <Check className="h-4 w-4" />
-            {saving ? "Saving…" : "Save brand kit"}
+            Save brand context
           </Button>
         }
       />
 
-      <div className="grid grid-cols-1 lg:grid-cols-[1fr_380px] gap-4 items-start">
+      <div className="grid grid-cols-1 items-start gap-4 lg:grid-cols-[1fr_380px]">
         <div className="space-y-4">
-          <SectionCard title="Identity">
-            <div className="flex gap-5">
-              <div className="shrink-0">
-                <Label className="text-[12px]">Logo</Label>
-                <div className="mt-1 h-28 w-28 rounded-[14px] border-2 border-dashed border-border grid place-items-center hover:border-primary/40 hover:bg-primary-tint/40 cursor-pointer transition-colors group">
-                  <div className="text-center">
-                    <Upload className="h-4 w-4 mx-auto text-muted-foreground group-hover:text-primary" />
-                    <div className="text-[11px] text-muted-foreground mt-1">Upload</div>
-                  </div>
+          <SectionCard title="Website analysis">
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-end">
+              <div className="flex-1">
+                <Label className="text-[12px]">Your website URL</Label>
+                <div className="relative mt-1">
+                  <Globe className="pointer-events-none absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
+                  <Input
+                    value={urlInput}
+                    onChange={(e) => setUrlInput(e.target.value)}
+                    placeholder="yourbrand.com"
+                    className="pl-8"
+                  />
                 </div>
               </div>
-              <div className="flex-1 grid grid-cols-1 sm:grid-cols-2 gap-3">
-                <div><Label className="text-[12px]">Business name</Label><Input value={form.businessName} onChange={(e) => set("businessName")(e.target.value)} className="mt-1" placeholder="Growzzy" /></div>
-                <div><Label className="text-[12px]">Website</Label><Input placeholder="https://" value={form.website} onChange={(e) => set("website")(e.target.value)} className="mt-1" /></div>
-                <div><Label className="text-[12px]">Industry</Label><Input value={form.industry} onChange={(e) => set("industry")(e.target.value)} className="mt-1" placeholder="e.g. Fashion, SaaS" /></div>
-                <div><Label className="text-[12px]">Default landing page</Label><Input placeholder="https://" value={form.defaultLandingPage} onChange={(e) => set("defaultLandingPage")(e.target.value)} className="mt-1" /></div>
-              </div>
+              <Button onClick={runAnalysis} disabled={analyzing} className="gap-1.5">
+                {analyzing ? <Loader2 className="h-4 w-4 animate-spin" /> : <Sparkles className="h-4 w-4" />}
+                {analyzing ? "Analysing your business…" : "Deep-analyse my business"}
+              </Button>
             </div>
+            <p className="mt-2 text-[11.5px] leading-snug text-muted-foreground">
+              Growzzy reads your real pages, searches the live web for your category and competitors,
+              then builds the brand context every campaign is written from.
+            </p>
+            {!ready && !analyzing && (
+              <div className="mt-3 rounded-[10px] border border-border bg-warn-bg/50 p-3 text-[12.5px] text-foreground">
+                Brand context is empty — the AI will keep asking you to set this up until it's filled.
+              </div>
+            )}
+            {brand.analyzedAt && (
+              <div className="mt-3 text-[11.5px] text-muted-foreground">
+                Last analysed {new Date(brand.analyzedAt).toLocaleString()}
+                {brand.sources?.length ? ` · ${brand.sources.length} live sources read` : ""}
+              </div>
+            )}
           </SectionCard>
 
-          <SectionCard title="Colors">
-            <div className="flex flex-wrap gap-2">
+          <SectionCard title="Business">
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+              <div>
+                <Label className="text-[12px]">Business name</Label>
+                <Input value={brand.businessName} onChange={(e) => set("businessName")(e.target.value)} className="mt-1" />
+              </div>
+              <div>
+                <Label className="text-[12px]">Industry</Label>
+                <Input value={brand.industry} onChange={(e) => set("industry")(e.target.value)} className="mt-1" />
+              </div>
+              <div>
+                <Label className="text-[12px]">Business model</Label>
+                <Input value={brand.businessModel} onChange={(e) => set("businessModel")(e.target.value)} className="mt-1" placeholder="e.g. D2C ecommerce, B2B SaaS" />
+              </div>
+              <div>
+                <Label className="text-[12px]">Default landing page</Label>
+                <Input value={brand.defaultLandingPage} onChange={(e) => set("defaultLandingPage")(e.target.value)} className="mt-1" placeholder="https://" />
+              </div>
+              <div className="sm:col-span-2">
+                <Label className="text-[12px]">What you sell</Label>
+                <Textarea rows={2} value={brand.whatTheySell} onChange={(e) => set("whatTheySell")(e.target.value)} className="mt-1" />
+              </div>
+              <div className="sm:col-span-2">
+                <Label className="text-[12px]">Product description</Label>
+                <Textarea rows={3} value={brand.productDescription} onChange={(e) => set("productDescription")(e.target.value)} className="mt-1" />
+              </div>
+              <div className="sm:col-span-2">
+                <Label className="text-[12px]">Positioning</Label>
+                <Textarea rows={2} value={brand.positioning} onChange={(e) => set("positioning")(e.target.value)} className="mt-1" />
+              </div>
+              <div className="sm:col-span-2">
+                <Label className="text-[12px]">Ideal customer</Label>
+                <Input value={brand.audience} onChange={(e) => set("audience")(e.target.value)} className="mt-1" />
+              </div>
+            </div>
+            {brand.differentiators.length > 0 && (
+              <div className="mt-4">
+                <div className="mb-1.5 text-[12px] font-medium text-foreground">Differentiators</div>
+                <Chips items={brand.differentiators} />
+              </div>
+            )}
+          </SectionCard>
+
+          {brand.segments.length > 0 && (
+            <SectionCard title="Audience segments">
+              <div className="space-y-2.5">
+                {brand.segments.map((s) => (
+                  <div key={s.segment} className="rounded-[10px] border border-border p-3">
+                    <div className="text-[13px] font-semibold text-foreground">{s.segment}</div>
+                    <div className="mt-1 text-[12.5px] text-muted-foreground">Pains: {s.pains}</div>
+                    <div className="text-[12.5px] text-muted-foreground">Triggers: {s.triggers}</div>
+                  </div>
+                ))}
+              </div>
+            </SectionCard>
+          )}
+
+          {brand.competitors.length > 0 && (
+            <SectionCard title="Competitors">
+              <div className="space-y-2">
+                {brand.competitors.map((c) => (
+                  <div key={c.name + c.url} className="flex items-start justify-between gap-3 rounded-[10px] border border-border p-3">
+                    <div>
+                      <div className="text-[13px] font-semibold text-foreground">{c.name}</div>
+                      <div className="mt-0.5 text-[12.5px] text-muted-foreground">{c.angle}</div>
+                    </div>
+                    {c.url && (
+                      <a
+                        href={c.url}
+                        target="_blank"
+                        rel="noreferrer noopener"
+                        className="inline-flex shrink-0 items-center gap-1 text-[12px] text-primary hover:underline"
+                      >
+                        Visit <ExternalLink className="h-3 w-3" />
+                      </a>
+                    )}
+                  </div>
+                ))}
+              </div>
+            </SectionCard>
+          )}
+
+          {(brand.keywords.length > 0 || brand.creativeAngles.length > 0) && (
+            <SectionCard title="Search & creative signals">
+              {brand.keywords.length > 0 && (
+                <div>
+                  <div className="mb-1.5 text-[12px] font-medium text-foreground">High-intent keywords</div>
+                  <Chips items={brand.keywords} />
+                </div>
+              )}
+              {brand.creativeAngles.length > 0 && (
+                <div className="mt-4">
+                  <div className="mb-1.5 text-[12px] font-medium text-foreground">Creative angles</div>
+                  <ul className="space-y-1">
+                    {brand.creativeAngles.map((a) => (
+                      <li key={a} className="text-[12.5px] text-muted-foreground">• {a}</li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+            </SectionCard>
+          )}
+
+          <SectionCard title="Voice & colors">
+            <Label className="text-[12px]">Tone of voice</Label>
+            <div className="mt-2 grid grid-cols-2 gap-2 sm:grid-cols-4">
+              {tones.map((t) => (
+                <button
+                  key={t.value}
+                  onClick={() => set("tone")(t.value)}
+                  className={cn(
+                    "rounded-[10px] border p-2.5 text-left transition-colors",
+                    brand.tone === t.value ? "border-primary bg-primary-tint" : "border-border hover:border-primary/30",
+                  )}
+                >
+                  <div className="text-[12.5px] font-semibold">{t.label}</div>
+                  <div className="mt-0.5 line-clamp-2 text-[11px] text-muted-foreground">{t.sample}</div>
+                </button>
+              ))}
+            </div>
+            <div className="mt-4 flex flex-wrap gap-2">
               {palettes.map((p) => (
                 <button
                   key={p.name}
-                  onClick={() => setPalette(p)}
+                  onClick={() => set("palette")(p)}
                   className={cn(
                     "flex items-center gap-2 rounded-full border px-3 py-1.5 text-[12.5px] transition-colors",
                     palette.name === p.name ? "border-primary bg-primary-tint text-primary" : "border-border bg-background hover:border-primary/30",
@@ -111,69 +313,26 @@ function BrandPage() {
               ))}
             </div>
           </SectionCard>
-
-          <SectionCard title="Voice & product">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-              <div className="md:col-span-2">
-                <Label className="text-[12px]">Tone of voice</Label>
-                <div className="mt-2 grid grid-cols-2 sm:grid-cols-4 gap-2">
-                  {tones.map((t) => (
-                    <button
-                      key={t.value}
-                      onClick={() => set("tone")(t.value)}
-                      className={cn(
-                        "text-left rounded-[10px] border p-2.5 transition-colors",
-                        form.tone === t.value ? "border-primary bg-primary-tint" : "border-border hover:border-primary/30",
-                      )}
-                    >
-                      <div className="text-[12.5px] font-semibold">{t.label}</div>
-                      <div className="text-[11px] text-muted-foreground mt-0.5 line-clamp-2">{t.sample}</div>
-                    </button>
-                  ))}
-                </div>
-              </div>
-              <div className="md:col-span-2">
-                <Label className="text-[12px]">Product description</Label>
-                <Textarea
-                  rows={3}
-                  value={form.productDescription}
-                  onChange={(e) => set("productDescription")(e.target.value)}
-                  className="mt-1"
-                  placeholder="What do you sell? Who's it for? What makes it different?"
-                />
-              </div>
-              <div className="md:col-span-2">
-                <Label className="text-[12px]">Ideal customer</Label>
-                <Input
-                  value={form.audience}
-                  onChange={(e) => set("audience")(e.target.value)}
-                  className="mt-1"
-                  placeholder="e.g. Women 25–45 in Tier 1 India cities who shop online"
-                />
-              </div>
-            </div>
-          </SectionCard>
         </div>
 
-        {/* Live preview */}
         <aside className="sticky top-4">
           <SectionCard title="Live preview">
-            <div className="rounded-[14px] border border-border overflow-hidden">
-              <div className="h-16 flex items-center px-4 gap-3" style={{ background: palette.accent }}>
-                <div className="h-8 w-8 rounded-lg grid place-items-center text-white font-bold text-[13px]" style={{ background: palette.primary }}>
-                  {(form.businessName || "G").slice(0, 1).toUpperCase()}
+            <div className="overflow-hidden rounded-[14px] border border-border">
+              <div className="flex h-16 items-center gap-3 px-4" style={{ background: palette.accent }}>
+                <div className="grid h-8 w-8 place-items-center rounded-lg text-[13px] font-bold text-white" style={{ background: palette.primary }}>
+                  {(brand.businessName || "G").slice(0, 1).toUpperCase()}
                 </div>
                 <div className="text-[13.5px] font-semibold text-foreground">
-                  {form.businessName || "Your brand"}
+                  {brand.businessName || "Your brand"}
                 </div>
               </div>
-              <div className="p-4 bg-background">
-                <div className="text-[11px] text-muted-foreground mb-1">Sponsored</div>
-                <div className="text-[15px] font-medium leading-tight mb-1" style={{ color: palette.primary }}>
-                  {form.businessName ? `${form.businessName} — ${tone.label} ad` : "Your headline appears here"}
+              <div className="bg-background p-4">
+                <div className="mb-1 text-[11px] text-muted-foreground">Sponsored</div>
+                <div className="mb-1 text-[15px] font-medium leading-tight" style={{ color: palette.primary }}>
+                  {brand.businessName ? `${brand.businessName} — ${tone.label} ad` : "Your headline appears here"}
                 </div>
                 <div className="text-[12.5px] text-foreground/80">
-                  {form.productDescription || tone.sample}
+                  {brand.productDescription || tone.sample}
                 </div>
                 <button
                   className="mt-3 inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-[12px] font-medium text-white"
@@ -184,10 +343,24 @@ function BrandPage() {
                 </button>
               </div>
             </div>
-            <p className="text-[11.5px] text-muted-foreground mt-3">
-              This is a live sample of how your ads will feel across Google & Meta.
+            <p className="mt-3 text-[11.5px] text-muted-foreground">
+              Growzzy only advertises on Google Ads and Meta Ads — this is how your ads will feel.
             </p>
           </SectionCard>
+
+          {brand.sources?.length ? (
+            <SectionCard title="Sources read" className="mt-4">
+              <ul className="space-y-1">
+                {brand.sources.slice(0, 10).map((s) => (
+                  <li key={s} className="truncate text-[11.5px]">
+                    <a href={s} target="_blank" rel="noreferrer noopener" className="text-primary hover:underline">
+                      {s}
+                    </a>
+                  </li>
+                ))}
+              </ul>
+            </SectionCard>
+          ) : null}
         </aside>
       </div>
     </div>
