@@ -301,6 +301,9 @@ function AgentMessage({
             if (name === "deliverCampaign") {
               return <CampaignCard key={i} part={part as ToolUIPart} />;
             }
+            if (name === "requestBrandSetup") {
+              return <BrandSetupCard key={i} part={part as ToolUIPart} />;
+            }
             // research + anything else
             return <ResearchCard key={i} part={part as ToolUIPart} />;
           })}
@@ -309,6 +312,26 @@ function AgentMessage({
     </Message>
   );
 }
+
+function BrandSetupCard({ part }: { part: ToolUIPart }) {
+  const input = part.input as { reason?: string } | undefined;
+  return (
+    <div className="rounded-[12px] border border-border bg-card p-4">
+      <div className="text-[13px] font-medium text-foreground">I need your brand context first</div>
+      <p className="mt-1 text-[12.5px] text-muted-foreground">
+        {input?.reason ??
+          "Add your website in My Brand and I'll analyse your business deeply before planning anything."}
+      </p>
+      <Link
+        to="/brand"
+        className="mt-3 inline-flex rounded-full bg-primary px-3 py-1.5 text-[12px] font-medium text-primary-foreground"
+      >
+        Analyse my website
+      </Link>
+    </div>
+  );
+}
+
 
 /* ------------------------------- tool cards -------------------------------- */
 
