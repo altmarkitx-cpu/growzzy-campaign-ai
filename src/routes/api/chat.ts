@@ -127,7 +127,24 @@ export const Route = createFileRoute("/api/chat")({
                     "You are a performance-marketing research analyst. You are given REAL search results and REAL page text. Ground every claim in it. Answer with tight bullet notes: audience segments, buying triggers, competitor angles observed, 8-12 high-intent keywords, creative hooks, and realistic CPC/CTR/CPA ranges labelled as estimates. End with a '**Sources**' list of the URLs you actually used. Only Google Ads and Meta Ads exist as channels.",
                   prompt: `Focus: ${focus}\nTopics:\n${topics.map((t) => `- ${t}`).join("\n")}\n\nEVIDENCE:\n${evidence.slice(0, 50000)}`,
                 });
-                return { focus, notes: text, sources: urls };
+                const citations = urls.map((u) => {
+                  const hit = searches.flatMap((s) => s.results).find((r) => r.url === u);
+                  let site = u;
+                  try {
+                    site = new URL(u).hostname.replace(/^www\./, "");
+                  } catch {
+                    /* keep raw */
+                  }
+                  return { url: u, site, title: hit?.title ?? site, snippet: hit?.snippet ?? "" };
+                });
+                return {
+                  focus,
+                  notes: text,
+                  sources: urls,
+                  citations,
+                  queries: searches.map((s) => s.q),
+                };
+
               },
             }),
             requestBrandSetup: tool({
