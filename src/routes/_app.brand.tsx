@@ -281,65 +281,192 @@ function BrandPage() {
             </div>
           </SectionCard>
 
-          {brand.segments.length > 0 && (
-            <SectionCard title="Audience segments">
+          <SectionCard
+            title="Audience segments"
+            actions={
+              <Button
+                variant="outline"
+                size="sm"
+                className="gap-1"
+                onClick={() =>
+                  set("segments")([...brand.segments, { segment: "", pains: "", triggers: "" }])
+                }
+              >
+                <Plus className="h-3.5 w-3.5" />
+                Add segment
+              </Button>
+            }
+          >
+            {brand.segments.length === 0 ? (
+              <p className="text-[12.5px] text-muted-foreground">
+                No segments yet — analyse your website or add one manually.
+              </p>
+            ) : (
               <div className="space-y-2.5">
-                {brand.segments.map((s) => (
-                  <div key={s.segment} className="rounded-[10px] border border-border p-3">
-                    <div className="text-[13px] font-semibold text-foreground">{s.segment}</div>
-                    <div className="mt-1 text-[12.5px] text-muted-foreground">Pains: {s.pains}</div>
-                    <div className="text-[12.5px] text-muted-foreground">Triggers: {s.triggers}</div>
-                  </div>
-                ))}
-              </div>
-            </SectionCard>
-          )}
-
-          {brand.competitors.length > 0 && (
-            <SectionCard title="Competitors">
-              <div className="space-y-2">
-                {brand.competitors.map((c) => (
-                  <div key={c.name + c.url} className="flex items-start justify-between gap-3 rounded-[10px] border border-border p-3">
-                    <div>
-                      <div className="text-[13px] font-semibold text-foreground">{c.name}</div>
-                      <div className="mt-0.5 text-[12.5px] text-muted-foreground">{c.angle}</div>
-                    </div>
-                    {c.url && (
-                      <a
-                        href={c.url}
-                        target="_blank"
-                        rel="noreferrer noopener"
-                        className="inline-flex shrink-0 items-center gap-1 text-[12px] text-primary hover:underline"
+                {brand.segments.map((seg, i) => (
+                  <div key={i} className="rounded-[10px] border border-border p-3">
+                    <div className="flex items-center gap-2">
+                      <Input
+                        value={seg.segment}
+                        onChange={(e) =>
+                          set("segments")(
+                            brand.segments.map((x, xi) =>
+                              xi === i ? { ...x, segment: e.target.value } : x,
+                            ),
+                          )
+                        }
+                        placeholder="Segment name"
+                        className="h-8 text-[12.5px] font-medium"
+                      />
+                      <button
+                        type="button"
+                        aria-label="Remove segment"
+                        onClick={() => set("segments")(brand.segments.filter((_, xi) => xi !== i))}
+                        className="shrink-0 text-muted-foreground hover:text-danger"
                       >
-                        Visit <ExternalLink className="h-3 w-3" />
-                      </a>
-                    )}
+                        <Trash2 className="h-3.5 w-3.5" />
+                      </button>
+                    </div>
+                    <Textarea
+                      rows={2}
+                      value={seg.pains}
+                      onChange={(e) =>
+                        set("segments")(
+                          brand.segments.map((x, xi) => (xi === i ? { ...x, pains: e.target.value } : x)),
+                        )
+                      }
+                      placeholder="Pains"
+                      className="mt-2 text-[12.5px]"
+                    />
+                    <Textarea
+                      rows={2}
+                      value={seg.triggers}
+                      onChange={(e) =>
+                        set("segments")(
+                          brand.segments.map((x, xi) =>
+                            xi === i ? { ...x, triggers: e.target.value } : x,
+                          ),
+                        )
+                      }
+                      placeholder="Buying triggers"
+                      className="mt-2 text-[12.5px]"
+                    />
                   </div>
                 ))}
               </div>
-            </SectionCard>
-          )}
+            )}
+          </SectionCard>
 
-          {(brand.keywords.length > 0 || brand.creativeAngles.length > 0) && (
-            <SectionCard title="Search & creative signals">
-              {brand.keywords.length > 0 && (
-                <div>
-                  <div className="mb-1.5 text-[12px] font-medium text-foreground">High-intent keywords</div>
-                  <Chips items={brand.keywords} />
-                </div>
-              )}
-              {brand.creativeAngles.length > 0 && (
-                <div className="mt-4">
-                  <div className="mb-1.5 text-[12px] font-medium text-foreground">Creative angles</div>
-                  <ul className="space-y-1">
-                    {brand.creativeAngles.map((a) => (
-                      <li key={a} className="text-[12.5px] text-muted-foreground">• {a}</li>
-                    ))}
-                  </ul>
-                </div>
-              )}
-            </SectionCard>
-          )}
+          <SectionCard
+            title="Competitors"
+            actions={
+              <Button
+                variant="outline"
+                size="sm"
+                className="gap-1"
+                onClick={() =>
+                  set("competitors")([...brand.competitors, { name: "", url: "", angle: "" }])
+                }
+              >
+                <Plus className="h-3.5 w-3.5" />
+                Add competitor
+              </Button>
+            }
+          >
+            {brand.competitors.length === 0 ? (
+              <p className="text-[12.5px] text-muted-foreground">
+                No competitors yet — analyse your website or add one manually.
+              </p>
+            ) : (
+              <div className="space-y-2">
+                {brand.competitors.map((c, i) => (
+                  <div key={i} className="rounded-[10px] border border-border p-3">
+                    <div className="flex items-center gap-2">
+                      <Input
+                        value={c.name}
+                        onChange={(e) =>
+                          set("competitors")(
+                            brand.competitors.map((x, xi) =>
+                              xi === i ? { ...x, name: e.target.value } : x,
+                            ),
+                          )
+                        }
+                        placeholder="Competitor name"
+                        className="h-8 text-[12.5px] font-medium"
+                      />
+                      <Input
+                        value={c.url}
+                        onChange={(e) =>
+                          set("competitors")(
+                            brand.competitors.map((x, xi) =>
+                              xi === i ? { ...x, url: e.target.value } : x,
+                            ),
+                          )
+                        }
+                        placeholder="https://"
+                        className="h-8 text-[12.5px]"
+                      />
+                      {c.url && (
+                        <a
+                          href={c.url}
+                          target="_blank"
+                          rel="noreferrer noopener"
+                          className="shrink-0 text-primary"
+                          aria-label={`Visit ${c.name}`}
+                        >
+                          <ExternalLink className="h-3.5 w-3.5" />
+                        </a>
+                      )}
+                      <button
+                        type="button"
+                        aria-label="Remove competitor"
+                        onClick={() =>
+                          set("competitors")(brand.competitors.filter((_, xi) => xi !== i))
+                        }
+                        className="shrink-0 text-muted-foreground hover:text-danger"
+                      >
+                        <Trash2 className="h-3.5 w-3.5" />
+                      </button>
+                    </div>
+                    <Textarea
+                      rows={2}
+                      value={c.angle}
+                      onChange={(e) =>
+                        set("competitors")(
+                          brand.competitors.map((x, xi) =>
+                            xi === i ? { ...x, angle: e.target.value } : x,
+                          ),
+                        )
+                      }
+                      placeholder="Their angle / how they position"
+                      className="mt-2 text-[12.5px]"
+                    />
+                  </div>
+                ))}
+              </div>
+            )}
+          </SectionCard>
+
+          <SectionCard title="Search & creative signals">
+            <div>
+              <div className="mb-1.5 text-[12px] font-medium text-foreground">
+                High-intent keywords
+              </div>
+              <ChipEditor
+                items={brand.keywords}
+                onChange={set("keywords")}
+                placeholder="Add a keyword and press Enter"
+              />
+            </div>
+            <div className="mt-4">
+              <div className="mb-1.5 text-[12px] font-medium text-foreground">Creative angles</div>
+              <ChipEditor
+                items={brand.creativeAngles}
+                onChange={set("creativeAngles")}
+                placeholder="Add a creative angle and press Enter"
+              />
+            </div>
+          </SectionCard>
 
           <SectionCard title="Voice & colors">
             <Label className="text-[12px]">Tone of voice</Label>
