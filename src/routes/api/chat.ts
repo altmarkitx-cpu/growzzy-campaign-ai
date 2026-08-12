@@ -82,7 +82,7 @@ export const Route = createFileRoute("/api/chat")({
 
         const brandBlock = brandContext?.trim()
           ? `\n\n=== BRAND CONTEXT (from the user's My Brand profile — treat as known facts, never ask about it) ===\n${brandContext.trim()}`
-          : `\n\n=== BRAND CONTEXT ===\nEMPTY — the user has not set up My Brand yet. Call requestBrandSetup immediately instead of asking questions about their business.`;
+          : `\n\n=== BRAND CONTEXT ===\nEMPTY — nothing is known about this business yet. If the user's request needs business context, call askBrandUrl once, then analyzeWebsite with the URL they give, and continue from that analysis. Never ask "what is your business".`;
 
         const result = streamText({
           model,
