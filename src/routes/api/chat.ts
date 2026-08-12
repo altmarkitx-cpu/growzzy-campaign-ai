@@ -147,14 +147,30 @@ export const Route = createFileRoute("/api/chat")({
 
               },
             }),
-            requestBrandSetup: tool({
+            askBrandUrl: tool({
               description:
-                "Use when the brand context is empty. Prompts the user to add their website in My Brand so Growzzy can analyse the business. Takes no further action.",
+                "Use ONLY when the brand context is empty: asks the user for their website URL inside the chat. The user replies with the URL; then call analyzeWebsite with it.",
               inputSchema: z.object({
-                reason: z.string().describe("one short line on why brand setup is needed"),
+                reason: z.string().describe("one short line on why you need their website"),
               }),
-              execute: async ({ reason }) => ({ requested: true, reason }),
             }),
+            analyzeWebsite: tool({
+              description:
+                "Deeply analyse a website with REAL live page reads + web search: returns the business model, ICP segments, competitors, keywords and creative angles. Call this right after the user gives their URL.",
+              inputSchema: z.object({
+                url: z.string().describe("the website URL the user gave"),
+              }),
+              execute: async ({ url }) => {
+                try {
+                  const { analyzeSite } = await import("@/lib/brand-analysis.server");
+                  const { site, profile } = await analyzeSite(apiKey, url);
+                  return { site, profile };
+                } catch (e) {
+                  return { site: url, error: (e as Error).message };
+                }
+              },
+            }),
+
             askUser: tool({
               description:
                 "Ask the user your clarifying doubts before planning. Questions must be specific to their business; platform options may only be Google Ads or Meta Ads. Never ask what the business is.",
