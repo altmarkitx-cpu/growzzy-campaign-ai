@@ -48,21 +48,6 @@ const tones = [
   { value: "premium", label: "Premium", sample: "Crafted for those who notice the details." },
 ];
 
-function Chips({ items }: { items: string[] }) {
-  return (
-    <div className="flex flex-wrap gap-1.5">
-      {items.map((t) => (
-        <span
-          key={t}
-          className="rounded-full border border-border bg-background px-2 py-0.5 text-[11.5px] text-muted-foreground"
-        >
-          {t}
-        </span>
-      ))}
-    </div>
-  );
-}
-
 /** Editable list of short strings, rendered as removable chips. */
 function ChipEditor({
   items,
@@ -283,7 +268,7 @@ function BrandPage() {
 
           <SectionCard
             title="Audience segments"
-            actions={
+            action={
               <Button
                 variant="outline"
                 size="sm"
@@ -359,7 +344,7 @@ function BrandPage() {
 
           <SectionCard
             title="Competitors"
-            actions={
+            action={
               <Button
                 variant="outline"
                 size="sm"
