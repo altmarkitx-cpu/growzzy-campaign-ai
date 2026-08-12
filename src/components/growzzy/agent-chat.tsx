@@ -1,7 +1,8 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Link } from "@tanstack/react-router";
 import {
   loadBrand,
+  saveBrand,
   brandIsReady,
   brandContextText,
   type BrandProfile,
@@ -19,6 +20,7 @@ import {
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import {
   Conversation,
   ConversationContent,
@@ -38,16 +40,20 @@ import { StatusPill } from "@/components/growzzy/status-pill";
 import logoAsset from "@/assets/growzzy-logo.png.asset.json";
 import {
   Check,
-  CircleDot,
+  ChevronDown,
+  Gauge,
+  Globe,
   Image as ImageIcon,
   ListChecks,
   Megaphone,
   MessageCircleQuestion,
+  Paperclip,
   Rocket,
   Search,
   Target,
   Wand2,
 } from "lucide-react";
+
 
 /* ------------------------------- tool payloads ------------------------------ */
 
