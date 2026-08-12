@@ -643,7 +643,9 @@ function AnalyzeCard({ part }: { part: ToolUIPart }) {
 
 function ResearchCard({ part }: { part: ToolUIPart }) {
   const input = part.input as { focus?: string; topics?: string[] } | undefined;
-  const output = part.output as { notes?: string } | undefined;
+  const output = part.output as
+    | { notes?: string; queries?: string[]; citations?: { url: string; site: string; title: string }[] }
+    | undefined;
   const running = part.state !== "output-available" && part.state !== "output-error";
 
   return (
@@ -671,6 +673,33 @@ function ResearchCard({ part }: { part: ToolUIPart }) {
               {t}
             </span>
           ))}
+        </div>
+      )}
+      {output?.citations && output.citations.length > 0 && (
+        <div className="mt-3 rounded-[10px] border border-border bg-background p-3">
+          <div className="mb-1.5 text-[11px] font-medium uppercase tracking-wide text-muted-foreground">
+            Sources read live ({output.citations.length})
+          </div>
+          <ul className="space-y-1">
+            {output.citations.map((c) => (
+              <li key={c.url} className="text-[11.5px] leading-snug">
+                <a
+                  href={c.url}
+                  target="_blank"
+                  rel="noreferrer noopener"
+                  className="font-medium text-primary hover:underline"
+                >
+                  {c.site}
+                </a>
+                <span className="text-muted-foreground"> — {c.title}</span>
+              </li>
+            ))}
+          </ul>
+          {output.queries && output.queries.length > 0 && (
+            <p className="mt-2 text-[11px] text-muted-foreground">
+              Searched: {output.queries.join(" · ")}
+            </p>
+          )}
         </div>
       )}
       {output?.notes && (
@@ -868,6 +897,7 @@ function CreativeCard({ part }: { part: ToolUIPart }) {
   const input = part.input as { caption?: string; prompt?: string } | undefined;
   const output = part.output as CreativeOutput | undefined;
   const running = part.state !== "output-available" && part.state !== "output-error";
+  const elapsed = useElapsed(running);
 
   return (
     <div className="rounded-[12px] border border-border bg-card p-4">
@@ -876,7 +906,9 @@ function CreativeCard({ part }: { part: ToolUIPart }) {
           <ImageIcon className="h-3.5 w-3.5" />
         </span>
         {running ? (
-          <Shimmer className="text-[13px] font-medium">Generating your ad creative…</Shimmer>
+          <Shimmer className="text-[13px] font-medium">
+            {`Rendering your ad creative… ${elapsed}s (usually 60–120s)`}
+          </Shimmer>
         ) : (
           <span className="text-[13px] font-medium text-foreground">
             {output?.caption ?? input?.caption ?? "Ad creative"}
@@ -892,7 +924,10 @@ function CreativeCard({ part }: { part: ToolUIPart }) {
           />
         ) : (
           <div className="grid aspect-square w-full max-w-sm place-items-center text-[12px] text-muted-foreground">
-            {output?.error ?? "Rendering…"}
+            {output?.error ??
+              (running
+                ? `Rendering… ${elapsed}s elapsed`
+                : "No creative returned — ask me to retry.")}
           </div>
         )}
       </div>
@@ -1017,6 +1052,18 @@ function Block({ title, children }: { title: string; children: React.ReactNode }
       {children}
     </div>
   );
+}
+
+/** Seconds elapsed while `active` — used for the long image render window. */
+function useElapsed(active: boolean) {
+  const [seconds, setSeconds] = useState(0);
+  useEffect(() => {
+    if (!active) return;
+    setSeconds(0);
+    const id = setInterval(() => setSeconds((s) => s + 1), 1000);
+    return () => clearInterval(id);
+  }, [active]);
+  return seconds;
 }
 
 function Field({ label, value }: { label: string; value: string }) {
