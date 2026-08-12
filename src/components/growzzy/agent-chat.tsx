@@ -121,8 +121,54 @@ export interface AgentChatProps {
   greetingName?: string;
 }
 
+type Artifacts = {
+  plan?: PlanInput;
+  planApproved?: boolean;
+  creative?: CreativeOutput;
+  campaign?: CampaignInput;
+  citations: { url: string; site: string; title: string }[];
+};
+
+function deriveArtifacts(messages: UIMessage[]): Artifacts {
+  const out: Artifacts = { citations: [] };
+  const seen = new Set<string>();
+  for (const m of messages) {
+    for (const part of m.parts) {
+      if (!isToolUIPart(part)) continue;
+      const name = getToolName(part as ToolUIPart);
+      const p = part as ToolUIPart;
+      if (name === "proposePlan" && p.input) {
+        out.plan = p.input as PlanInput;
+        out.planApproved = (p.output as { approved?: boolean } | undefined)?.approved;
+      }
+      if (name === "generateCreative" && p.output) out.creative = p.output as CreativeOutput;
+      if (name === "deliverCampaign" && p.input) out.campaign = p.input as CampaignInput;
+      if (name === "research") {
+        const cites = (p.output as { citations?: Artifacts["citations"] } | undefined)?.citations;
+        for (const c of cites ?? []) {
+          if (seen.has(c.url)) continue;
+          seen.add(c.url);
+          out.citations.push(c);
+        }
+      }
+    }
+  }
+  return out;
+}
+
+const modes = [
+  { value: "standard", label: "Standard" },
+  { value: "deep", label: "Deep research" },
+];
+
+export interface AgentChatProps {
+  threadId?: string;
+  greetingName?: string;
+}
+
 export function AgentChat({ threadId = "growzzy-agent", greetingName = "there" }: AgentChatProps) {
   const [input, setInput] = useState("");
+  const [mode, setMode] = useState("standard");
   const [brand, setBrand] = useState<BrandProfile>(() => loadBrand());
 
   useEffect(() => {
@@ -144,116 +190,280 @@ export function AgentChat({ threadId = "growzzy-agent", greetingName = "there" }
     onError: (e) => toast.error(e.message || "Growzzy couldn't answer — try again."),
   });
 
+  /* When the agent analyses a website in-chat, persist it as the brand context. */
+  const savedAnalysis = useRef<string | null>(null);
+  useEffect(() => {
+    for (const m of messages) {
+      for (const part of m.parts) {
+        if (!isToolUIPart(part)) continue;
+        if (getToolName(part as ToolUIPart) !== "analyzeWebsite") continue;
+        const out = (part as ToolUIPart).output as
+          | { site?: string; profile?: Partial<BrandProfile> & { sources?: string[] } }
+          | undefined;
+        if (!out?.profile?.businessName) continue;
+        const key = (part as ToolUIPart).toolCallId;
+        if (savedAnalysis.current === key) continue;
+        savedAnalysis.current = key;
+        const current = loadBrand();
+        saveBrand({
+          ...current,
+          ...out.profile,
+          website: out.site ?? current.website,
+          defaultLandingPage: current.defaultLandingPage || out.site || "",
+          analyzedAt: new Date().toISOString(),
+        } as BrandProfile);
+        toast.success(`Saved ${out.profile.businessName} to My Brand.`);
+      }
+    }
+  }, [messages]);
+
   const busy = status === "submitted" || status === "streaming";
   const started = messages.length > 0;
-
+  const artifacts = useMemo(() => deriveArtifacts(messages), [messages]);
+  const hasPreview = Boolean(
+    artifacts.plan || artifacts.campaign || artifacts.creative || artifacts.citations.length,
+  );
 
   const submit = (text: string) => {
     const value = text.trim();
     if (!value || busy) return;
     setInput("");
-    void sendMessage({ text: value });
+    void sendMessage({
+      text: mode === "deep" ? `${value}\n\n(Run deep live research before answering.)` : value,
+    });
   };
 
-  return (
-    <div className="flex h-[calc(100vh-116px)] flex-col">
-      {started ? (
-        <Conversation className="flex-1">
-          <ConversationContent className="mx-auto w-full max-w-3xl px-1 pb-6">
-            {messages.map((m) => (
-              <AgentMessage key={m.id} message={m} addToolResult={addToolResult} />
-            ))}
-            {status === "submitted" && (
-              <div className="flex items-center gap-2 pl-1">
-                <Shimmer className="text-[13.5px]">Growzzy is thinking…</Shimmer>
-              </div>
-            )}
-          </ConversationContent>
-          <ConversationScrollButton />
-        </Conversation>
-      ) : (
-        <div className="flex flex-1 flex-col items-center justify-center px-4">
-          <img src={logoAsset.url} alt="Growzzy" className="mb-5 h-11 w-11 rounded-xl" />
-          <h1 className="text-[34px] font-semibold tracking-tight text-foreground">
-            Hello, {greetingName}
-          </h1>
-          <p className="mt-2 max-w-md text-center text-[14px] text-muted-foreground">
-            {brandReady
-              ? `I already know ${brand.businessName} — your offer, audience and competitors. Just tell me what to launch.`
-              : "Tell me what you want to advertise. I'll research it live, ask only what I can't find, plan the build, then hand you a launch-ready campaign."}
-          </p>
-          {!brandReady && (
-            <div className="mt-5 flex w-full max-w-xl items-center justify-between gap-3 rounded-[12px] border border-border bg-warn-bg/50 p-3.5">
-              <span className="text-[12.5px] text-foreground">
-                I don't know your business yet. Add your website in My Brand and I'll analyse it
-                deeply — offer, audience, competitors, keywords.
-              </span>
-              <Link
-                to="/brand"
-                className="shrink-0 rounded-full bg-primary px-3 py-1.5 text-[12px] font-medium text-primary-foreground"
-              >
-                Set up My Brand
-              </Link>
-            </div>
-          )}
+  const composer = (
+    <div className={cn("w-full px-1 pb-2", hasPreview ? "" : "mx-auto max-w-3xl")}>
+      <PromptInput
+        className="rounded-[16px]"
+        onSubmit={(_msg, e) => {
+          e.preventDefault();
+          submit(input);
+        }}
+      >
+        <PromptInputTextarea
+          value={input}
+          onChange={(e) => setInput(e.currentTarget.value)}
+          autoFocus
+          placeholder={started ? "Ask anything…" : "Ask anything, or describe what to launch…"}
+        />
+        <PromptInputFooter className="justify-between">
+          <PromptInputTools>
+            <button
+              type="button"
+              onClick={() => toast.info("Attachments are coming soon.")}
+              aria-label="Attach a file"
+              className="grid h-7 w-7 place-items-center rounded-full text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+            >
+              <Paperclip className="h-4 w-4" />
+            </button>
+            <button
+              type="button"
+              onClick={() => setMode((m) => (m === "standard" ? "deep" : "standard"))}
+              className="inline-flex items-center gap-1.5 rounded-full border border-border bg-background px-2.5 py-1 text-[11.5px] text-foreground transition-colors hover:bg-muted"
+            >
+              <Gauge className="h-3.5 w-3.5 text-muted-foreground" />
+              {modes.find((m) => m.value === mode)?.label}
+              <ChevronDown className="h-3 w-3 text-muted-foreground" />
+            </button>
+          </PromptInputTools>
+          <PromptInputSubmit
+            className="rounded-full"
+            status={status}
+            disabled={!input.trim() && !busy}
+          />
+        </PromptInputFooter>
+      </PromptInput>
+      <p className="mt-2 text-center text-[11px] text-muted-foreground">
+        Growzzy can make mistakes. Review every campaign before launching.
+      </p>
+    </div>
+  );
 
-          <div className="mt-8 grid w-full max-w-3xl grid-cols-1 gap-2.5 sm:grid-cols-2">
-            {suggestions.map((s) => (
-              <button
-                key={s.title}
-                onClick={() => submit(s.text)}
-                className="group flex items-start gap-3 rounded-[12px] border border-border bg-card p-3.5 text-left transition-colors hover:border-primary/30 hover:bg-primary-tint/40"
-              >
-                <span className="mt-0.5 grid h-8 w-8 shrink-0 place-items-center rounded-lg bg-primary-tint text-primary">
-                  <s.icon className="h-4 w-4" />
-                </span>
-                <span>
-                  <span className="block text-[13px] font-medium text-foreground">{s.title}</span>
-                  <span className="mt-0.5 block text-[12px] leading-snug text-muted-foreground">
-                    {s.text}
-                  </span>
-                </span>
-              </button>
-            ))}
+  const thread = started ? (
+    <Conversation className="flex-1">
+      <ConversationContent
+        className={cn("w-full px-1 pb-6", hasPreview ? "" : "mx-auto max-w-3xl")}
+      >
+        {messages.map((m) => (
+          <AgentMessage key={m.id} message={m} addToolResult={addToolResult} />
+        ))}
+        {status === "submitted" && (
+          <div className="flex items-center gap-2 pl-1">
+            <Shimmer className="text-[13.5px]">Growzzy is thinking…</Shimmer>
           </div>
+        )}
+      </ConversationContent>
+      <ConversationScrollButton />
+    </Conversation>
+  ) : (
+    <div className="flex flex-1 flex-col items-center justify-center px-4">
+      <img src={logoAsset.url} alt="Growzzy" className="mb-5 h-11 w-11 rounded-xl" />
+      <h1 className="text-[34px] font-semibold tracking-tight text-foreground">
+        Hello, {greetingName}
+      </h1>
+      <p className="mt-2 max-w-md text-center text-[14px] text-muted-foreground">
+        {brandReady
+          ? `I already know ${brand.businessName} — your offer, audience and competitors. Ask me anything, or tell me what to launch.`
+          : "Ask me anything about your ads and market. If I need your business, I'll ask for your website right here and analyse it live."}
+      </p>
+      {!brandReady && (
+        <div className="mt-5 flex w-full max-w-xl items-center justify-between gap-3 rounded-[12px] border border-border bg-warn-bg/50 p-3.5">
+          <span className="text-[12.5px] text-foreground">
+            No brand context yet — I'll ask for your website in the chat when I need it, or set it up
+            once in My Brand.
+          </span>
+          <Link
+            to="/brand"
+            className="shrink-0 rounded-full bg-primary px-3 py-1.5 text-[12px] font-medium text-primary-foreground"
+          >
+            Set up My Brand
+          </Link>
         </div>
       )}
 
-      {/* Composer */}
-      <div className="mx-auto w-full max-w-3xl px-1 pb-2">
-        <PromptInput
-          onSubmit={(_msg, e) => {
-            e.preventDefault();
-            submit(input);
-          }}
-        >
-          <PromptInputTextarea
-            value={input}
-            onChange={(e) => setInput(e.currentTarget.value)}
-            autoFocus
-            placeholder={
-              started
-                ? "Reply, refine the plan, or ask for changes…"
-                : "Describe your product, offer or goal…"
-            }
-          />
-          <PromptInputFooter className="justify-between">
-            <PromptInputTools>
-              <span className="inline-flex items-center gap-1.5 rounded-full border border-border bg-background px-2.5 py-1 text-[11.5px] text-muted-foreground">
-                <CircleDot className="h-3 w-3 text-primary" />
-                Auto-research
+      <div className="mt-8 grid w-full max-w-3xl grid-cols-1 gap-2.5 sm:grid-cols-2">
+        {suggestions.map((s) => (
+          <button
+            key={s.title}
+            onClick={() => submit(s.text)}
+            className="group flex items-start gap-3 rounded-[12px] border border-border bg-card p-3.5 text-left transition-colors hover:border-primary/30 hover:bg-primary-tint/40"
+          >
+            <span className="mt-0.5 grid h-8 w-8 shrink-0 place-items-center rounded-lg bg-primary-tint text-primary">
+              <s.icon className="h-4 w-4" />
+            </span>
+            <span>
+              <span className="block text-[13px] font-medium text-foreground">{s.title}</span>
+              <span className="mt-0.5 block text-[12px] leading-snug text-muted-foreground">
+                {s.text}
               </span>
-            </PromptInputTools>
-            <PromptInputSubmit status={status} disabled={!input.trim() && !busy} />
-          </PromptInputFooter>
-        </PromptInput>
-        <p className="mt-2 text-center text-[11px] text-muted-foreground">
-          Growzzy can make mistakes. Review every campaign before launching.
-        </p>
+            </span>
+          </button>
+        ))}
       </div>
     </div>
   );
+
+  return (
+    <div className="flex h-[calc(100vh-116px)] gap-4">
+      <div className="flex min-w-0 flex-1 flex-col">
+        {thread}
+        {composer}
+      </div>
+      {hasPreview && (
+        <aside className="hidden w-[380px] shrink-0 flex-col overflow-y-auto rounded-[14px] border border-border bg-muted/30 p-3 lg:flex">
+          <PreviewRail artifacts={artifacts} />
+        </aside>
+      )}
+    </div>
+  );
 }
+
+/* --------------------------- live preview rail ----------------------------- */
+
+function PreviewRail({ artifacts }: { artifacts: Artifacts }) {
+  const { plan, planApproved, creative, campaign, citations } = artifacts;
+  return (
+    <div className="space-y-3">
+      <div className="flex items-center justify-between px-1">
+        <span className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground">
+          Live campaign preview
+        </span>
+        {campaign ? (
+          <StatusPill variant="success">Ready</StatusPill>
+        ) : plan ? (
+          <StatusPill variant={planApproved ? "primary" : "warn"}>
+            {planApproved ? "Building" : "Awaiting approval"}
+          </StatusPill>
+        ) : (
+          <StatusPill variant="muted">Researching</StatusPill>
+        )}
+      </div>
+
+      {creative?.imageUrl && (
+        <div className="overflow-hidden rounded-[12px] border border-border bg-card">
+          <img
+            src={creative.imageUrl}
+            alt={creative.caption ?? "Ad creative"}
+            className="aspect-square w-full object-cover"
+          />
+          <div className="px-3 py-2 text-[11.5px] text-muted-foreground">{creative.caption}</div>
+        </div>
+      )}
+
+      {campaign ? (
+        <div className="rounded-[12px] border border-border bg-card p-3">
+          <div className="text-[13px] font-semibold text-foreground">{campaign.name}</div>
+          <div className="text-[11.5px] text-muted-foreground">
+            {campaign.platform} · {campaign.objective}
+          </div>
+          <div className="mt-2 space-y-1">
+            <Field
+              label="Daily budget"
+              value={`${campaign.currency} ${campaign.budgetDaily}`}
+            />
+            <Field label="Bidding" value={campaign.bidding} />
+            <Field label="Schedule" value={campaign.schedule} />
+          </div>
+          {campaign.headlines?.length > 0 && (
+            <div className="mt-3 border-t border-border pt-2">
+              <div className="mb-1 text-[11px] uppercase tracking-wide text-muted-foreground">
+                Ad copy
+              </div>
+              {campaign.headlines.slice(0, 3).map((h) => (
+                <div key={h} className="text-[12.5px] font-medium text-primary">
+                  {h}
+                </div>
+              ))}
+              <p className="mt-1 line-clamp-3 text-[12px] text-muted-foreground">
+                {campaign.primaryText || campaign.descriptions?.[0]}
+              </p>
+            </div>
+          )}
+        </div>
+      ) : plan ? (
+        <div className="rounded-[12px] border border-border bg-card p-3">
+          <div className="text-[13px] font-semibold text-foreground">{plan.title}</div>
+          <ol className="mt-2 space-y-1.5">
+            {plan.steps.map((s, i) => (
+              <li key={i} className="flex gap-2 text-[12px] text-muted-foreground">
+                <span className="grid h-4 w-4 shrink-0 place-items-center rounded-full bg-muted text-[10px]">
+                  {i + 1}
+                </span>
+                {s.title}
+              </li>
+            ))}
+          </ol>
+        </div>
+      ) : null}
+
+      {citations.length > 0 && (
+        <div className="rounded-[12px] border border-border bg-card p-3">
+          <div className="mb-1.5 text-[11px] uppercase tracking-wide text-muted-foreground">
+            Sources read ({citations.length})
+          </div>
+          <ul className="space-y-1">
+            {citations.slice(0, 10).map((c) => (
+              <li key={c.url} className="truncate text-[11.5px]">
+                <a
+                  href={c.url}
+                  target="_blank"
+                  rel="noreferrer noopener"
+                  className="text-primary hover:underline"
+                >
+                  {c.site}
+                </a>
+                <span className="text-muted-foreground"> — {c.title}</span>
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
+    </div>
+  );
+}
+
 
 /* ------------------------------- message ---------------------------------- */
 
