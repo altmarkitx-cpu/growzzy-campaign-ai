@@ -512,8 +512,13 @@ function AgentMessage({
             if (name === "deliverCampaign") {
               return <CampaignCard key={i} part={part as ToolUIPart} />;
             }
-            if (name === "requestBrandSetup") {
-              return <BrandSetupCard key={i} part={part as ToolUIPart} />;
+            if (name === "askBrandUrl") {
+              return (
+                <BrandUrlCard key={i} part={part as ToolUIPart} addToolResult={addToolResult} />
+              );
+            }
+            if (name === "analyzeWebsite") {
+              return <AnalyzeCard key={i} part={part as ToolUIPart} />;
             }
             // research + anything else
             return <ResearchCard key={i} part={part as ToolUIPart} />;
@@ -524,24 +529,114 @@ function AgentMessage({
   );
 }
 
-function BrandSetupCard({ part }: { part: ToolUIPart }) {
+function BrandUrlCard({
+  part,
+  addToolResult,
+}: {
+  part: ToolUIPart;
+  addToolResult: AddToolResult;
+}) {
   const input = part.input as { reason?: string } | undefined;
+  const done = part.state === "output-available";
+  const sent = (part.output as { url?: string } | undefined)?.url;
+  const [url, setUrl] = useState("");
+
   return (
     <div className="rounded-[12px] border border-border bg-card p-4">
-      <div className="text-[13px] font-medium text-foreground">I need your brand context first</div>
-      <p className="mt-1 text-[12.5px] text-muted-foreground">
+      <div className="flex items-center gap-2">
+        <span className="grid h-7 w-7 place-items-center rounded-lg bg-primary-tint text-primary">
+          <Globe className="h-3.5 w-3.5" />
+        </span>
+        <span className="text-[13px] font-medium text-foreground">What's your website?</span>
+      </div>
+      <p className="mt-1.5 text-[12.5px] text-muted-foreground">
         {input?.reason ??
-          "Add your website in My Brand and I'll analyse your business deeply before planning anything."}
+          "Drop your website URL and I'll analyse your business live — offer, audience, competitors, keywords — before asking anything else."}
       </p>
-      <Link
-        to="/brand"
-        className="mt-3 inline-flex rounded-full bg-primary px-3 py-1.5 text-[12px] font-medium text-primary-foreground"
-      >
-        Analyse my website
-      </Link>
+      {done ? (
+        <div className="mt-3 inline-flex items-center gap-1.5 text-[12px] text-success">
+          <Check className="h-3.5 w-3.5" /> {sent}
+        </div>
+      ) : (
+        <form
+          className="mt-3 flex gap-2"
+          onSubmit={(e) => {
+            e.preventDefault();
+            const value = url.trim();
+            if (!value) return;
+            addToolResult({ tool: "askBrandUrl", toolCallId: part.toolCallId, output: { url: value } });
+          }}
+        >
+          <Input
+            value={url}
+            onChange={(e) => setUrl(e.currentTarget.value)}
+            placeholder="yourbrand.com"
+            className="h-9 text-[13px]"
+          />
+          <Button type="submit" disabled={!url.trim()} className="h-9 shrink-0">
+            Analyse
+          </Button>
+        </form>
+      )}
+      <p className="mt-2 text-[11px] text-muted-foreground">
+        Or set it up once in{" "}
+        <Link to="/brand" className="text-primary hover:underline">
+          My Brand
+        </Link>
+        .
+      </p>
     </div>
   );
 }
+
+function AnalyzeCard({ part }: { part: ToolUIPart }) {
+  const input = part.input as { url?: string } | undefined;
+  const output = part.output as
+    | { site?: string; error?: string; profile?: BrandProfile }
+    | undefined;
+  const running = part.state !== "output-available" && part.state !== "output-error";
+  const p = output?.profile;
+
+  return (
+    <div className="rounded-[12px] border border-border bg-card p-4">
+      <div className="flex items-center gap-2">
+        <span className="grid h-7 w-7 place-items-center rounded-lg bg-primary-tint text-primary">
+          <Globe className="h-3.5 w-3.5" />
+        </span>
+        {running ? (
+          <Shimmer className="text-[13px] font-medium">{`Analysing ${input?.url ?? "your website"} — reading pages, finding competitors…`}</Shimmer>
+        ) : (
+          <span className="text-[13px] font-medium text-foreground">
+            {p ? `Analysed ${p.businessName}` : "Analysis failed"}
+          </span>
+        )}
+      </div>
+      {output?.error && (
+        <p className="mt-2 text-[12.5px] text-danger">{output.error}</p>
+      )}
+      {p && (
+        <div className="mt-3 space-y-1.5">
+          <Field label="Industry" value={p.industry} />
+          <Field label="Model" value={p.businessModel} />
+          <Field label="Sells" value={p.whatTheySell} />
+          <Field label="Audience" value={p.audience} />
+          <div className="flex flex-wrap gap-1.5 pt-1">
+            {(p.competitors ?? []).slice(0, 5).map((c) => (
+              <span
+                key={c.name}
+                className="rounded-full border border-border bg-background px-2 py-0.5 text-[11.5px] text-muted-foreground"
+              >
+                {c.name}
+              </span>
+            ))}
+          </div>
+          <p className="pt-1 text-[11px] text-muted-foreground">Saved to My Brand.</p>
+        </div>
+      )}
+    </div>
+  );
+}
+
 
 
 /* ------------------------------- tool cards -------------------------------- */
