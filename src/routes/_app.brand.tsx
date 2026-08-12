@@ -6,7 +6,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
 import { useEffect, useState } from "react";
-import { Sparkles, Check, Globe, Loader2, ExternalLink } from "lucide-react";
+import { Sparkles, Check, Globe, Loader2, ExternalLink, Plus, X, Trash2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useServerFn } from "@tanstack/react-start";
 import { analyzeBrandSite } from "@/lib/brand.functions";
@@ -59,6 +59,65 @@ function Chips({ items }: { items: string[] }) {
           {t}
         </span>
       ))}
+    </div>
+  );
+}
+
+/** Editable list of short strings, rendered as removable chips. */
+function ChipEditor({
+  items,
+  onChange,
+  placeholder,
+}: {
+  items: string[];
+  onChange: (next: string[]) => void;
+  placeholder: string;
+}) {
+  const [draft, setDraft] = useState("");
+  const add = () => {
+    const v = draft.trim();
+    if (!v || items.includes(v)) return;
+    onChange([...items, v]);
+    setDraft("");
+  };
+  return (
+    <div>
+      <div className="flex flex-wrap gap-1.5">
+        {items.map((t) => (
+          <span
+            key={t}
+            className="inline-flex items-center gap-1 rounded-full border border-border bg-background px-2 py-0.5 text-[11.5px] text-foreground"
+          >
+            {t}
+            <button
+              type="button"
+              aria-label={`Remove ${t}`}
+              onClick={() => onChange(items.filter((x) => x !== t))}
+              className="text-muted-foreground hover:text-danger"
+            >
+              <X className="h-3 w-3" />
+            </button>
+          </span>
+        ))}
+      </div>
+      <div className="mt-2 flex gap-2">
+        <Input
+          value={draft}
+          onChange={(e) => setDraft(e.target.value)}
+          onKeyDown={(e) => {
+            if (e.key === "Enter") {
+              e.preventDefault();
+              add();
+            }
+          }}
+          placeholder={placeholder}
+          className="h-8 text-[12.5px]"
+        />
+        <Button type="button" variant="outline" size="sm" onClick={add} className="h-8 shrink-0 gap-1">
+          <Plus className="h-3.5 w-3.5" />
+          Add
+        </Button>
+      </div>
     </div>
   );
 }
@@ -212,12 +271,14 @@ function BrandPage() {
                 <Input value={brand.audience} onChange={(e) => set("audience")(e.target.value)} className="mt-1" />
               </div>
             </div>
-            {brand.differentiators.length > 0 && (
-              <div className="mt-4">
-                <div className="mb-1.5 text-[12px] font-medium text-foreground">Differentiators</div>
-                <Chips items={brand.differentiators} />
-              </div>
-            )}
+            <div className="mt-4">
+              <div className="mb-1.5 text-[12px] font-medium text-foreground">Differentiators</div>
+              <ChipEditor
+                items={brand.differentiators}
+                onChange={set("differentiators")}
+                placeholder="Add a differentiator and press Enter"
+              />
+            </div>
           </SectionCard>
 
           {brand.segments.length > 0 && (
