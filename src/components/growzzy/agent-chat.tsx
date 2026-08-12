@@ -35,7 +35,13 @@ import {
   PromptInputSubmit,
 } from "@/components/ai-elements/prompt-input";
 import { Shimmer } from "@/components/ai-elements/shimmer";
-import { Tool, ToolContent, ToolHeader, ToolInput, ToolOutput } from "@/components/ai-elements/tool";
+import {
+  Tool,
+  ToolContent,
+  ToolHeader,
+  ToolInput,
+  ToolOutput,
+} from "@/components/ai-elements/tool";
 import { StatusPill } from "@/components/growzzy/status-pill";
 import logoAsset from "@/assets/growzzy-logo.png.asset.json";
 import {
@@ -53,7 +59,6 @@ import {
   Target,
   Wand2,
 } from "lucide-react";
-
 
 /* ------------------------------- tool payloads ------------------------------ */
 
@@ -306,8 +311,8 @@ export function AgentChat({ threadId = "growzzy-agent", greetingName = "there" }
       {!brandReady && (
         <div className="mt-5 flex w-full max-w-xl items-center justify-between gap-3 rounded-[12px] border border-border bg-warn-bg/50 p-3.5">
           <span className="text-[12.5px] text-foreground">
-            No brand context yet — I'll ask for your website in the chat when I need it, or set it up
-            once in My Brand.
+            No brand context yet — I'll ask for your website in the chat when I need it, or set it
+            up once in My Brand.
           </span>
           <Link
             to="/brand"
@@ -394,10 +399,7 @@ function PreviewRail({ artifacts }: { artifacts: Artifacts }) {
             {campaign.platform} · {campaign.objective}
           </div>
           <div className="mt-2 space-y-1">
-            <Field
-              label="Daily budget"
-              value={`${campaign.currency} ${campaign.budgetDaily}`}
-            />
+            <Field label="Daily budget" value={`${campaign.currency} ${campaign.budgetDaily}`} />
             <Field label="Bidding" value={campaign.bidding} />
             <Field label="Schedule" value={campaign.schedule} />
           </div>
@@ -459,7 +461,6 @@ function PreviewRail({ artifacts }: { artifacts: Artifacts }) {
   );
 }
 
-
 /* ------------------------------- message ---------------------------------- */
 
 type AddToolResult = ReturnType<typeof useChat>["addToolResult"];
@@ -494,17 +495,11 @@ function AgentMessage({
 
             if (name === "askUser") {
               return (
-                <QuestionsCard
-                  key={i}
-                  part={part as ToolUIPart}
-                  addToolResult={addToolResult}
-                />
+                <QuestionsCard key={i} part={part as ToolUIPart} addToolResult={addToolResult} />
               );
             }
             if (name === "proposePlan") {
-              return (
-                <PlanCard key={i} part={part as ToolUIPart} addToolResult={addToolResult} />
-              );
+              return <PlanCard key={i} part={part as ToolUIPart} addToolResult={addToolResult} />;
             }
             if (name === "generateCreative") {
               return <CreativeCard key={i} part={part as ToolUIPart} />;
@@ -529,13 +524,7 @@ function AgentMessage({
   );
 }
 
-function BrandUrlCard({
-  part,
-  addToolResult,
-}: {
-  part: ToolUIPart;
-  addToolResult: AddToolResult;
-}) {
+function BrandUrlCard({ part, addToolResult }: { part: ToolUIPart; addToolResult: AddToolResult }) {
   const input = part.input as { reason?: string } | undefined;
   const done = part.state === "output-available";
   const sent = (part.output as { url?: string } | undefined)?.url;
@@ -564,7 +553,11 @@ function BrandUrlCard({
             e.preventDefault();
             const value = url.trim();
             if (!value) return;
-            addToolResult({ tool: "askBrandUrl", toolCallId: part.toolCallId, output: { url: value } });
+            addToolResult({
+              tool: "askBrandUrl",
+              toolCallId: part.toolCallId,
+              output: { url: value },
+            });
           }}
         >
           <Input
@@ -611,9 +604,7 @@ function AnalyzeCard({ part }: { part: ToolUIPart }) {
           </span>
         )}
       </div>
-      {output?.error && (
-        <p className="mt-2 text-[12.5px] text-danger">{output.error}</p>
-      )}
+      {output?.error && <p className="mt-2 text-[12.5px] text-danger">{output.error}</p>}
       {p && (
         <div className="mt-3 space-y-1.5">
           <Field label="Industry" value={p.industry} />
@@ -637,14 +628,16 @@ function AnalyzeCard({ part }: { part: ToolUIPart }) {
   );
 }
 
-
-
 /* ------------------------------- tool cards -------------------------------- */
 
 function ResearchCard({ part }: { part: ToolUIPart }) {
   const input = part.input as { focus?: string; topics?: string[] } | undefined;
   const output = part.output as
-    | { notes?: string; queries?: string[]; citations?: { url: string; site: string; title: string }[] }
+    | {
+        notes?: string;
+        queries?: string[];
+        citations?: { url: string; site: string; title: string }[];
+      }
     | undefined;
   const running = part.state !== "output-available" && part.state !== "output-error";
 
@@ -738,9 +731,7 @@ function QuestionsCard({
         <span className="grid h-7 w-7 place-items-center rounded-lg bg-primary-tint text-primary">
           <MessageCircleQuestion className="h-3.5 w-3.5" />
         </span>
-        <span className="text-[13px] font-medium text-foreground">
-          A few things before I build
-        </span>
+        <span className="text-[13px] font-medium text-foreground">A few things before I build</span>
         <StatusPill variant="primary">{total} questions</StatusPill>
       </div>
 

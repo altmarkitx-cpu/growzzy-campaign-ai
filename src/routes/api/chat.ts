@@ -1,7 +1,18 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { convertToModelMessages, streamText, stepCountIs, tool, generateText, type UIMessage } from "ai";
+import {
+  convertToModelMessages,
+  streamText,
+  stepCountIs,
+  tool,
+  generateText,
+  type UIMessage,
+} from "ai";
 import { z } from "zod";
-import { createLovableAiGatewayProvider, generateAdImage, CHAT_MODEL } from "@/lib/ai-gateway.server";
+import {
+  createLovableAiGatewayProvider,
+  generateAdImage,
+  CHAT_MODEL,
+} from "@/lib/ai-gateway.server";
 
 const SYSTEM = `You are Growzzy, the AI brain inside the Growzzy OS ad platform. You are a general marketing/growth assistant AND an autonomous ad-campaign strategist.
 
@@ -26,8 +37,6 @@ Rules:
 - Be concise and concrete. No filler, no restating the brief.
 - Frame benchmarks as estimates and cite the sources research returns.
 - All money figures use the user's currency if stated, otherwise USD.`;
-
-
 
 const questionSchema = z.object({
   questions: z
@@ -144,7 +153,6 @@ export const Route = createFileRoute("/api/chat")({
                   citations,
                   queries: searches.map((s) => s.q),
                 };
-
               },
             }),
             askBrandUrl: tool({

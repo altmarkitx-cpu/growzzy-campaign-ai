@@ -10,7 +10,13 @@ import { Sparkles, Check, Globe, Loader2, ExternalLink, Plus, X, Trash2 } from "
 import { cn } from "@/lib/utils";
 import { useServerFn } from "@tanstack/react-start";
 import { analyzeBrandSite } from "@/lib/brand.functions";
-import { loadBrand, saveBrand, brandIsReady, emptyBrand, type BrandProfile } from "@/lib/brand-store";
+import {
+  loadBrand,
+  saveBrand,
+  brandIsReady,
+  emptyBrand,
+  type BrandProfile,
+} from "@/lib/brand-store";
 
 export const Route = createFileRoute("/_app/brand")({
   head: () => ({
@@ -24,7 +30,8 @@ export const Route = createFileRoute("/_app/brand")({
       { property: "og:title", content: "My Brand · Growzzy OS" },
       {
         property: "og:description",
-        content: "Your brand context: offer, audience, competitors and keywords, analysed from your live website.",
+        content:
+          "Your brand context: offer, audience, competitors and keywords, analysed from your live website.",
       },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },
@@ -43,7 +50,11 @@ const palettes = [
 
 const tones = [
   { value: "friendly", label: "Friendly", sample: "Hey! Grab yours before they're gone ✨" },
-  { value: "professional", label: "Professional", sample: "Trusted by 10,000+ businesses worldwide." },
+  {
+    value: "professional",
+    label: "Professional",
+    sample: "Trusted by 10,000+ businesses worldwide.",
+  },
   { value: "playful", label: "Playful", sample: "Warning: dangerously good products inside 💎" },
   { value: "premium", label: "Premium", sample: "Crafted for those who notice the details." },
 ];
@@ -98,7 +109,13 @@ function ChipEditor({
           placeholder={placeholder}
           className="h-8 text-[12.5px]"
         />
-        <Button type="button" variant="outline" size="sm" onClick={add} className="h-8 shrink-0 gap-1">
+        <Button
+          type="button"
+          variant="outline"
+          size="sm"
+          onClick={add}
+          className="h-8 shrink-0 gap-1"
+        >
           <Plus className="h-3.5 w-3.5" />
           Add
         </Button>
@@ -119,8 +136,10 @@ function BrandPage() {
     setUrlInput(loaded.website);
   }, []);
 
-  const set = <K extends keyof BrandProfile>(k: K) => (v: BrandProfile[K]) =>
-    setBrand((b) => ({ ...b, [k]: v }));
+  const set =
+    <K extends keyof BrandProfile>(k: K) =>
+    (v: BrandProfile[K]) =>
+      setBrand((b) => ({ ...b, [k]: v }));
 
   const ready = brandIsReady(brand);
 
@@ -200,17 +219,22 @@ function BrandPage() {
                 </div>
               </div>
               <Button onClick={runAnalysis} disabled={analyzing} className="gap-1.5">
-                {analyzing ? <Loader2 className="h-4 w-4 animate-spin" /> : <Sparkles className="h-4 w-4" />}
+                {analyzing ? (
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                ) : (
+                  <Sparkles className="h-4 w-4" />
+                )}
                 {analyzing ? "Analysing your business…" : "Deep-analyse my business"}
               </Button>
             </div>
             <p className="mt-2 text-[11.5px] leading-snug text-muted-foreground">
-              Growzzy reads your real pages, searches the live web for your category and competitors,
-              then builds the brand context every campaign is written from.
+              Growzzy reads your real pages, searches the live web for your category and
+              competitors, then builds the brand context every campaign is written from.
             </p>
             {!ready && !analyzing && (
               <div className="mt-3 rounded-[10px] border border-border bg-warn-bg/50 p-3 text-[12.5px] text-foreground">
-                Brand context is empty — the AI will keep asking you to set this up until it's filled.
+                Brand context is empty — the AI will keep asking you to set this up until it's
+                filled.
               </div>
             )}
             {brand.analyzedAt && (
@@ -225,35 +249,72 @@ function BrandPage() {
             <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
               <div>
                 <Label className="text-[12px]">Business name</Label>
-                <Input value={brand.businessName} onChange={(e) => set("businessName")(e.target.value)} className="mt-1" />
+                <Input
+                  value={brand.businessName}
+                  onChange={(e) => set("businessName")(e.target.value)}
+                  className="mt-1"
+                />
               </div>
               <div>
                 <Label className="text-[12px]">Industry</Label>
-                <Input value={brand.industry} onChange={(e) => set("industry")(e.target.value)} className="mt-1" />
+                <Input
+                  value={brand.industry}
+                  onChange={(e) => set("industry")(e.target.value)}
+                  className="mt-1"
+                />
               </div>
               <div>
                 <Label className="text-[12px]">Business model</Label>
-                <Input value={brand.businessModel} onChange={(e) => set("businessModel")(e.target.value)} className="mt-1" placeholder="e.g. D2C ecommerce, B2B SaaS" />
+                <Input
+                  value={brand.businessModel}
+                  onChange={(e) => set("businessModel")(e.target.value)}
+                  className="mt-1"
+                  placeholder="e.g. D2C ecommerce, B2B SaaS"
+                />
               </div>
               <div>
                 <Label className="text-[12px]">Default landing page</Label>
-                <Input value={brand.defaultLandingPage} onChange={(e) => set("defaultLandingPage")(e.target.value)} className="mt-1" placeholder="https://" />
+                <Input
+                  value={brand.defaultLandingPage}
+                  onChange={(e) => set("defaultLandingPage")(e.target.value)}
+                  className="mt-1"
+                  placeholder="https://"
+                />
               </div>
               <div className="sm:col-span-2">
                 <Label className="text-[12px]">What you sell</Label>
-                <Textarea rows={2} value={brand.whatTheySell} onChange={(e) => set("whatTheySell")(e.target.value)} className="mt-1" />
+                <Textarea
+                  rows={2}
+                  value={brand.whatTheySell}
+                  onChange={(e) => set("whatTheySell")(e.target.value)}
+                  className="mt-1"
+                />
               </div>
               <div className="sm:col-span-2">
                 <Label className="text-[12px]">Product description</Label>
-                <Textarea rows={3} value={brand.productDescription} onChange={(e) => set("productDescription")(e.target.value)} className="mt-1" />
+                <Textarea
+                  rows={3}
+                  value={brand.productDescription}
+                  onChange={(e) => set("productDescription")(e.target.value)}
+                  className="mt-1"
+                />
               </div>
               <div className="sm:col-span-2">
                 <Label className="text-[12px]">Positioning</Label>
-                <Textarea rows={2} value={brand.positioning} onChange={(e) => set("positioning")(e.target.value)} className="mt-1" />
+                <Textarea
+                  rows={2}
+                  value={brand.positioning}
+                  onChange={(e) => set("positioning")(e.target.value)}
+                  className="mt-1"
+                />
               </div>
               <div className="sm:col-span-2">
                 <Label className="text-[12px]">Ideal customer</Label>
-                <Input value={brand.audience} onChange={(e) => set("audience")(e.target.value)} className="mt-1" />
+                <Input
+                  value={brand.audience}
+                  onChange={(e) => set("audience")(e.target.value)}
+                  className="mt-1"
+                />
               </div>
             </div>
             <div className="mt-4">
@@ -317,7 +378,9 @@ function BrandPage() {
                       value={seg.pains}
                       onChange={(e) =>
                         set("segments")(
-                          brand.segments.map((x, xi) => (xi === i ? { ...x, pains: e.target.value } : x)),
+                          brand.segments.map((x, xi) =>
+                            xi === i ? { ...x, pains: e.target.value } : x,
+                          ),
                         )
                       }
                       placeholder="Pains"
@@ -462,11 +525,15 @@ function BrandPage() {
                   onClick={() => set("tone")(t.value)}
                   className={cn(
                     "rounded-[10px] border p-2.5 text-left transition-colors",
-                    brand.tone === t.value ? "border-primary bg-primary-tint" : "border-border hover:border-primary/30",
+                    brand.tone === t.value
+                      ? "border-primary bg-primary-tint"
+                      : "border-border hover:border-primary/30",
                   )}
                 >
                   <div className="text-[12.5px] font-semibold">{t.label}</div>
-                  <div className="mt-0.5 line-clamp-2 text-[11px] text-muted-foreground">{t.sample}</div>
+                  <div className="mt-0.5 line-clamp-2 text-[11px] text-muted-foreground">
+                    {t.sample}
+                  </div>
                 </button>
               ))}
             </div>
@@ -477,7 +544,9 @@ function BrandPage() {
                   onClick={() => set("palette")(p)}
                   className={cn(
                     "flex items-center gap-2 rounded-full border px-3 py-1.5 text-[12.5px] transition-colors",
-                    palette.name === p.name ? "border-primary bg-primary-tint text-primary" : "border-border bg-background hover:border-primary/30",
+                    palette.name === p.name
+                      ? "border-primary bg-primary-tint text-primary"
+                      : "border-border bg-background hover:border-primary/30",
                   )}
                 >
                   <span className="h-4 w-4 rounded-full" style={{ background: p.primary }} />
@@ -491,8 +560,14 @@ function BrandPage() {
         <aside className="sticky top-4">
           <SectionCard title="Live preview">
             <div className="overflow-hidden rounded-[14px] border border-border">
-              <div className="flex h-16 items-center gap-3 px-4" style={{ background: palette.accent }}>
-                <div className="grid h-8 w-8 place-items-center rounded-lg text-[13px] font-bold text-white" style={{ background: palette.primary }}>
+              <div
+                className="flex h-16 items-center gap-3 px-4"
+                style={{ background: palette.accent }}
+              >
+                <div
+                  className="grid h-8 w-8 place-items-center rounded-lg text-[13px] font-bold text-white"
+                  style={{ background: palette.primary }}
+                >
                   {(brand.businessName || "G").slice(0, 1).toUpperCase()}
                 </div>
                 <div className="text-[13.5px] font-semibold text-foreground">
@@ -501,8 +576,13 @@ function BrandPage() {
               </div>
               <div className="bg-background p-4">
                 <div className="mb-1 text-[11px] text-muted-foreground">Sponsored</div>
-                <div className="mb-1 text-[15px] font-medium leading-tight" style={{ color: palette.primary }}>
-                  {brand.businessName ? `${brand.businessName} — ${tone.label} ad` : "Your headline appears here"}
+                <div
+                  className="mb-1 text-[15px] font-medium leading-tight"
+                  style={{ color: palette.primary }}
+                >
+                  {brand.businessName
+                    ? `${brand.businessName} — ${tone.label} ad`
+                    : "Your headline appears here"}
                 </div>
                 <div className="text-[12.5px] text-foreground/80">
                   {brand.productDescription || tone.sample}
@@ -526,7 +606,12 @@ function BrandPage() {
               <ul className="space-y-1">
                 {brand.sources.slice(0, 10).map((s) => (
                   <li key={s} className="truncate text-[11.5px]">
-                    <a href={s} target="_blank" rel="noreferrer noopener" className="text-primary hover:underline">
+                    <a
+                      href={s}
+                      target="_blank"
+                      rel="noreferrer noopener"
+                      className="text-primary hover:underline"
+                    >
                       {s}
                     </a>
                   </li>
