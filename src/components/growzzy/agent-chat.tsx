@@ -116,11 +116,6 @@ const suggestions = [
   },
 ];
 
-export interface AgentChatProps {
-  threadId?: string;
-  greetingName?: string;
-}
-
 type Artifacts = {
   plan?: PlanInput;
   planApproved?: boolean;
@@ -377,7 +372,7 @@ function PreviewRail({ artifacts }: { artifacts: Artifacts }) {
             {planApproved ? "Building" : "Awaiting approval"}
           </StatusPill>
         ) : (
-          <StatusPill variant="muted">Researching</StatusPill>
+          <StatusPill variant="info">Researching</StatusPill>
         )}
       </div>
 
