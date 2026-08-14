@@ -6,7 +6,17 @@ import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
 import { useEffect, useState } from "react";
-import { Sparkles, Check, Globe, Loader2, ExternalLink, Plus, X, Trash2 } from "lucide-react";
+import {
+  Sparkles,
+  Check,
+  Globe,
+  Loader2,
+  ExternalLink,
+  Plus,
+  X,
+  Trash2,
+  Download,
+} from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useServerFn } from "@tanstack/react-start";
 import { analyzeBrandSite } from "@/lib/brand.functions";
@@ -186,6 +196,89 @@ function BrandPage() {
     toast.success("Brand context saved. Growzzy uses it on every campaign.");
   };
 
+  const exportReport = async () => {
+    if (!brandIsReady(brand)) {
+      toast.error("Analyse or complete your brand before exporting a report.");
+      return;
+    }
+    const { jsPDF } = await import("jspdf");
+    const pdf = new jsPDF({ unit: "pt", format: "a4" });
+    const pageWidth = pdf.internal.pageSize.getWidth();
+    const pageHeight = pdf.internal.pageSize.getHeight();
+    const margin = 48;
+    const contentWidth = pageWidth - margin * 2;
+    let y = 54;
+
+    const ensureSpace = (height: number) => {
+      if (y + height <= pageHeight - 48) return;
+      pdf.addPage();
+      y = 54;
+    };
+    const line = (text: string, size = 10, color: [number, number, number] = [16, 22, 31]) => {
+      pdf.setFont("helvetica", "normal");
+      pdf.setFontSize(size);
+      pdf.setTextColor(...color);
+      const rows = pdf.splitTextToSize(text || "Not provided", contentWidth) as string[];
+      ensureSpace(rows.length * (size + 4));
+      pdf.text(rows, margin, y);
+      y += rows.length * (size + 4) + 5;
+    };
+    const heading = (text: string) => {
+      ensureSpace(34);
+      y += 10;
+      pdf.setFont("helvetica", "bold");
+      pdf.setFontSize(14);
+      pdf.setTextColor(31, 87, 245);
+      pdf.text(text, margin, y);
+      y += 20;
+    };
+
+    pdf.setFillColor(31, 87, 245);
+    pdf.rect(0, 0, pageWidth, 10, "F");
+    pdf.setFont("helvetica", "bold");
+    pdf.setFontSize(23);
+    pdf.setTextColor(16, 22, 31);
+    pdf.text(`${brand.businessName} — Brand Research`, margin, y);
+    y += 22;
+    line(
+      `Prepared by Growzzy OS${brand.analyzedAt ? ` · Research updated ${new Date(brand.analyzedAt).toLocaleDateString()}` : ""}`,
+      9,
+      [90, 101, 119],
+    );
+
+    heading("Business model");
+    line(`Industry: ${brand.industry}`);
+    line(`Model: ${brand.businessModel}`);
+    line(`Offer: ${brand.whatTheySell}`);
+    line(brand.productDescription);
+    line(`Positioning: ${brand.positioning}`);
+
+    heading("Ideal customer profile");
+    line(brand.audience);
+    brand.segments.forEach((segment, index) => {
+      line(`${index + 1}. ${segment.segment}`, 11);
+      line(`Pains: ${segment.pains}`, 9, [90, 101, 119]);
+      line(`Buying triggers: ${segment.triggers}`, 9, [90, 101, 119]);
+    });
+
+    heading("Competitors");
+    brand.competitors.forEach((competitor, index) => {
+      line(`${index + 1}. ${competitor.name}${competitor.url ? ` — ${competitor.url}` : ""}`, 10);
+      if (competitor.angle) line(competitor.angle, 9, [90, 101, 119]);
+    });
+
+    heading("High-intent keywords");
+    line(brand.keywords.length ? brand.keywords.join(" · ") : "No keywords recorded.");
+
+    heading("Citations and sources");
+    (brand.sources ?? []).forEach((source, index) => line(`${index + 1}. ${source}`, 9));
+    if (!brand.sources?.length) line("No source citations were recorded for this profile.", 9);
+
+    const safeName = (brand.businessName || "brand").toLowerCase().replace(/[^a-z0-9]+/g, "-");
+    pdf.save(`${safeName}-research-report.pdf`);
+    toast.success("Brand research PDF downloaded.");
+  };
+
   const tone = tones.find((t) => t.value === brand.tone) ?? tones[0];
   const palette = palettes.find((p) => p.name === brand.palette.name) ?? palettes[0];
 
@@ -195,10 +288,16 @@ function BrandPage() {
         title="My Brand"
         subtitle="Growzzy reads your live website so it never has to ask what your business is."
         actions={
-          <Button onClick={save} className="gap-1.5">
-            <Check className="h-4 w-4" />
-            Save brand context
-          </Button>
+          <div className="flex flex-wrap gap-2">
+            <Button variant="outline" onClick={exportReport} className="gap-1.5">
+              <Download className="h-4 w-4" />
+              Export PDF
+            </Button>
+            <Button onClick={save} className="gap-1.5">
+              <Check className="h-4 w-4" />
+              Save brand context
+            </Button>
+          </div>
         }
       />
 
