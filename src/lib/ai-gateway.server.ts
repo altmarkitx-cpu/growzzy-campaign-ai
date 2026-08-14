@@ -16,20 +16,33 @@ export function createLovableAiGatewayProvider(apiKey: string) {
 }
 
 /** Generates one ad creative image and returns it as a data URL. */
-export async function generateAdImage(apiKey: string, prompt: string): Promise<{ url: string | null; error?: string }> {
-  const res = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      "Lovable-API-Key": apiKey,
-      "X-Lovable-AIG-SDK": "fetch",
-    },
-    body: JSON.stringify({
-      model: IMAGE_MODEL,
-      messages: [{ role: "user", content: prompt }],
-      modalities: ["image", "text"],
-    }),
-  });
+export async function generateAdImage(
+  apiKey: string,
+  prompt: string,
+  signal?: AbortSignal,
+): Promise<{ url: string | null; error?: string }> {
+  let res: Response;
+  try {
+    res = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "Lovable-API-Key": apiKey,
+        "X-Lovable-AIG-SDK": "fetch",
+      },
+      body: JSON.stringify({
+        model: IMAGE_MODEL,
+        messages: [{ role: "user", content: prompt }],
+        modalities: ["image", "text"],
+      }),
+      signal,
+    });
+  } catch (error) {
+    if (signal?.aborted || (error instanceof DOMException && error.name === "AbortError")) {
+      return { url: null, error: "Generation canceled" };
+    }
+    throw error;
+  }
   if (!res.ok) {
     const detail = await res.text().catch(() => "");
     console.error("[growzzy] image generation failed", res.status, detail.slice(0, 300));
