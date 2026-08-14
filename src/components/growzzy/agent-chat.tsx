@@ -47,6 +47,7 @@ import logoAsset from "@/assets/growzzy-logo.png.asset.json";
 import {
   Check,
   ChevronDown,
+  CircleStop,
   Gauge,
   Globe,
   Image as ImageIcon,
@@ -180,7 +181,7 @@ export function AgentChat({ threadId = "growzzy-agent", greetingName = "there" }
 
   const brandReady = brandIsReady(brand);
 
-  const { messages, sendMessage, addToolResult, status } = useChat({
+  const { messages, sendMessage, addToolResult, status, stop } = useChat({
     id: threadId,
     transport: new DefaultChatTransport({
       api: "/api/chat",
@@ -224,10 +225,36 @@ export function AgentChat({ threadId = "growzzy-agent", greetingName = "there" }
     artifacts.plan || artifacts.campaign || artifacts.creative || artifacts.citations.length,
   );
 
+  const pendingQuestion = useMemo(() => {
+    for (let mi = messages.length - 1; mi >= 0; mi -= 1) {
+      const message = messages[mi];
+      if (!message) continue;
+      for (let pi = message.parts.length - 1; pi >= 0; pi -= 1) {
+        const part = message.parts[pi];
+        if (
+          isToolUIPart(part) &&
+          getToolName(part as ToolUIPart) === "askUser" &&
+          part.state !== "output-available"
+        ) {
+          return part as ToolUIPart;
+        }
+      }
+    }
+    return undefined;
+  }, [messages]);
+
   const submit = (text: string) => {
     const value = text.trim();
     if (!value || busy) return;
     setInput("");
+    if (pendingQuestion) {
+      addToolResult({
+        tool: "askUser",
+        toolCallId: pendingQuestion.toolCallId,
+        output: { answers: {}, freeform: value },
+      });
+      return;
+    }
     void sendMessage({
       text: mode === "deep" ? `${value}\n\n(Run deep live research before answering.)` : value,
     });
@@ -269,8 +296,9 @@ export function AgentChat({ threadId = "growzzy-agent", greetingName = "there" }
             </button>
           </PromptInputTools>
           <PromptInputSubmit
-            className="rounded-full"
+            className="h-9 w-9 rounded-full bg-foreground text-background hover:bg-foreground/90"
             status={status}
+            onStop={stop}
             disabled={!input.trim() && !busy}
           />
         </PromptInputFooter>
@@ -287,7 +315,12 @@ export function AgentChat({ threadId = "growzzy-agent", greetingName = "there" }
         className={cn("w-full px-1 pb-6", hasPreview ? "" : "mx-auto max-w-3xl")}
       >
         {messages.map((m) => (
-          <AgentMessage key={m.id} message={m} addToolResult={addToolResult} />
+          <AgentMessage
+            key={m.id}
+            message={m}
+            addToolResult={addToolResult}
+            onStop={stop}
+          />
         ))}
         {status === "submitted" && (
           <div className="flex items-center gap-2 pl-1">
@@ -468,9 +501,11 @@ type AddToolResult = ReturnType<typeof useChat>["addToolResult"];
 function AgentMessage({
   message,
   addToolResult,
+  onStop,
 }: {
   message: UIMessage;
   addToolResult: AddToolResult;
+  onStop: () => void;
 }) {
   if (message.role === "user") {
     return (
@@ -502,7 +537,7 @@ function AgentMessage({
               return <PlanCard key={i} part={part as ToolUIPart} addToolResult={addToolResult} />;
             }
             if (name === "generateCreative") {
-              return <CreativeCard key={i} part={part as ToolUIPart} />;
+              return <CreativeCard key={i} part={part as ToolUIPart} onStop={onStop} />;
             }
             if (name === "deliverCampaign") {
               return <CampaignCard key={i} part={part as ToolUIPart} />;
@@ -774,6 +809,16 @@ function QuestionsCard({
                 );
               })}
             </div>
+            {!answered && (
+              <Input
+                value={answers[q.id] ?? ""}
+                onChange={(event) =>
+                  setAnswers((current) => ({ ...current, [q.id]: event.currentTarget.value }))
+                }
+                placeholder="Or type your own answer…"
+                className="mt-2 h-9 text-[12.5px]"
+              />
+            )}
           </div>
         ))}
       </div>
@@ -860,7 +905,7 @@ function PlanCard({ part, addToolResult }: { part: ToolUIPart; addToolResult: Ad
               })
             }
           >
-            <Rocket className="h-4 w-4" /> Proceed with plan
+            <Rocket className="h-4 w-4" /> Approve plan
           </Button>
           <Button
             variant="outline"
@@ -876,7 +921,7 @@ function PlanCard({ part, addToolResult }: { part: ToolUIPart; addToolResult: Ad
               })
             }
           >
-            Request changes
+            Decline
           </Button>
         </div>
       )}
@@ -884,7 +929,7 @@ function PlanCard({ part, addToolResult }: { part: ToolUIPart; addToolResult: Ad
   );
 }
 
-function CreativeCard({ part }: { part: ToolUIPart }) {
+function CreativeCard({ part, onStop }: { part: ToolUIPart; onStop: () => void }) {
   const input = part.input as { caption?: string; prompt?: string } | undefined;
   const output = part.output as CreativeOutput | undefined;
   const running = part.state !== "output-available" && part.state !== "output-error";
@@ -897,9 +942,14 @@ function CreativeCard({ part }: { part: ToolUIPart }) {
           <ImageIcon className="h-3.5 w-3.5" />
         </span>
         {running ? (
-          <Shimmer className="text-[13px] font-medium">
-            {`Rendering your ad creative… ${elapsed}s (usually 60–120s)`}
-          </Shimmer>
+          <div className="flex min-w-0 flex-1 items-center justify-between gap-3">
+            <Shimmer className="truncate text-[13px] font-medium">
+              {`Rendering your ad creative… ${elapsed}s (usually 60–120s)`}
+            </Shimmer>
+            <Button type="button" variant="outline" size="sm" onClick={onStop} className="shrink-0 gap-1.5">
+              <CircleStop className="h-3.5 w-3.5" /> Cancel
+            </Button>
+          </div>
         ) : (
           <span className="text-[13px] font-medium text-foreground">
             {output?.caption ?? input?.caption ?? "Ad creative"}
