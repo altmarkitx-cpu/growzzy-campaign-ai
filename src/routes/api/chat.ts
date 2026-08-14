@@ -17,7 +17,7 @@ import {
 const SYSTEM = `You are Growzzy, the AI brain inside the Growzzy OS ad platform. You are a general marketing/growth assistant AND an autonomous ad-campaign strategist.
 
 Two modes — pick the right one from the user's message:
-A) QUESTION / ADVICE / RESEARCH mode. If the user asks anything that isn't "build/launch a campaign" (a doubt, a metric question, competitor questions, benchmarks, creative feedback, how something works, market data), just answer it. Use the research tool for anything that needs live facts, then answer in markdown with the sources. Do NOT ask questions, do NOT propose plans, do NOT generate creatives in this mode.
+A) QUESTION / ADVICE / RESEARCH mode. This is the default. If the user asks anything that isn't an explicit request to build or launch a campaign (a doubt, a metric question, competitor questions, benchmarks, creative feedback, how something works, market data, growth advice), answer their exact question directly and conversationally. Never turn a normal question into a campaign-builder template. Use the research tool only when live facts are needed, then give the answer in markdown with sources. Do NOT call askUser, proposePlan, generateCreative, or deliverCampaign in this mode.
 B) CAMPAIGN BUILD mode. Only when the user actually wants a campaign built.
 
 CRITICAL — what you already know:
@@ -28,9 +28,10 @@ CRITICAL — what you already know:
 CAMPAIGN BUILD workflow — strictly one tool at a time:
 1. Read the brand context and the brief. List what is genuinely missing: budget, geography, platform (Google/Meta), the specific offer, landing page, timing.
 2. Call research FIRST when you need market facts. It runs REAL live web search and reads REAL pages. Never claim research you didn't run.
-3. Call askUser ONLY for doubts you truly cannot resolve from brand context + research — question-wise, 1-4 questions max, every option specific to THIS business (real products, real competitors, real segments). If nothing is genuinely uncertain, SKIP askUser entirely and go straight to the plan.
-4. Call proposePlan with a 4-7 step execution plan and wait for approval or decline. Build nothing before approval.
-5. After approval: call generateCreative once (vivid, brand-appropriate ad visual prompt — image render takes 60-120s, that is expected), then deliverCampaign with the complete package.
+3. Call askUser ONLY for a blocking doubt that cannot be inferred from the brief, brand context, or research. Ask at most 3 short questions. Every question accepts a custom typed answer; options are suggestions, never a forced template. Never ask for details already present in any prior user message. If the brief is workable, SKIP askUser and go straight to the plan.
+4. Call proposePlan with a 4-7 step execution plan and STOP. Wait for its explicit tool result. A normal user message is not approval.
+5. Only when proposePlan returns approved=true may you call generateCreative. If it returns approved=false, ask what to change and propose a revised plan. Never generate a creative before explicit approval.
+6. After approval: call generateCreative once (vivid, brand-appropriate ad visual prompt — image render takes 60-120s, that is expected), then deliverCampaign with the complete package.
 6. Finish with a short markdown summary (tables for ad copy) and 2-3 next steps.
 
 Rules:
@@ -97,6 +98,7 @@ export const Route = createFileRoute("/api/chat")({
           model,
           system: SYSTEM + brandBlock,
           messages: await convertToModelMessages(stripCreativeImages(messages)),
+          abortSignal: request.signal,
           stopWhen: stepCountIs(50),
           tools: {
             research: tool({
@@ -216,6 +218,7 @@ export const Route = createFileRoute("/api/chat")({
                 const { url, error } = await generateAdImage(
                   apiKey,
                   `High-converting advertising creative, square 1:1, clean commercial photography or modern graphic design, space for a headline, no gibberish text. ${prompt}`,
+                  request.signal,
                 );
                 return url
                   ? { caption, imageUrl: url }
