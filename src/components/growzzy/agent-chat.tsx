@@ -7,6 +7,13 @@ import {
   brandContextText,
   type BrandProfile,
 } from "@/lib/brand-store";
+import {
+  resolveSubmission,
+  classifyChatError,
+  type Submission,
+  type ChatErrorKind,
+} from "@/lib/chat-routing";
+import { buildTranscript, downloadTranscript, type TranscriptMessage } from "@/lib/transcript";
 
 import { useChat } from "@ai-sdk/react";
 import {
