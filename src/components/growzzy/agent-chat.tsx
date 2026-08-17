@@ -181,6 +181,9 @@ export function AgentChat({ threadId = "growzzy-agent", greetingName = "there" }
 
   const brandReady = brandIsReady(brand);
 
+  const [chatError, setChatError] = useState<{ kind: ChatErrorKind; message: string } | null>(null);
+  const lastSubmission = useRef<Submission | null>(null);
+
   const { messages, sendMessage, addToolResult, status, stop } = useChat({
     id: threadId,
     transport: new DefaultChatTransport({
@@ -188,8 +191,17 @@ export function AgentChat({ threadId = "growzzy-agent", greetingName = "there" }
       body: () => ({ brandContext: brandContextText(loadBrand()) }),
     }),
     sendAutomaticallyWhen: lastAssistantMessageIsCompleteWithToolCalls,
-    onError: (e) => toast.error(e.message || "Growzzy couldn't answer — try again."),
+    onError: (e) => {
+      const info = classifyChatError(e);
+      setChatError(info);
+      // Preserve the draft so nothing is lost while credits/limits are fixed.
+      const last = lastSubmission.current;
+      if (last?.kind === "send") setInput((cur) => cur || last.text);
+      if (last?.kind === "answer-question") setInput((cur) => cur || last.freeform);
+      toast.error(info.message);
+    },
   });
+
 
   /* When the agent analyses a website in-chat, persist it as the brand context. */
   const savedAnalysis = useRef<string | null>(null);
