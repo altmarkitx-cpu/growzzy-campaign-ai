@@ -7,6 +7,13 @@ import {
   brandContextText,
   type BrandProfile,
 } from "@/lib/brand-store";
+import {
+  resolveSubmission,
+  classifyChatError,
+  type Submission,
+  type ChatErrorKind,
+} from "@/lib/chat-routing";
+import { buildTranscript, downloadTranscript, type TranscriptMessage } from "@/lib/transcript";
 
 import { useChat } from "@ai-sdk/react";
 import {
@@ -47,6 +54,8 @@ import logoAsset from "@/assets/growzzy-logo.png.asset.json";
 import {
   Check,
   ChevronDown,
+  Download as DownloadIcon,
+  RefreshCw,
   CircleStop,
   Gauge,
   Globe,
@@ -181,6 +190,9 @@ export function AgentChat({ threadId = "growzzy-agent", greetingName = "there" }
 
   const brandReady = brandIsReady(brand);
 
+  const [chatError, setChatError] = useState<{ kind: ChatErrorKind; message: string } | null>(null);
+  const lastSubmission = useRef<Submission | null>(null);
+
   const { messages, sendMessage, addToolResult, status, stop } = useChat({
     id: threadId,
     transport: new DefaultChatTransport({
@@ -188,8 +200,17 @@ export function AgentChat({ threadId = "growzzy-agent", greetingName = "there" }
       body: () => ({ brandContext: brandContextText(loadBrand()) }),
     }),
     sendAutomaticallyWhen: lastAssistantMessageIsCompleteWithToolCalls,
-    onError: (e) => toast.error(e.message || "Growzzy couldn't answer — try again."),
+    onError: (e) => {
+      const info = classifyChatError(e);
+      setChatError(info);
+      // Preserve the draft so nothing is lost while credits/limits are fixed.
+      const last = lastSubmission.current;
+      if (last?.kind === "send") setInput((cur) => cur || last.text);
+      if (last?.kind === "answer-question") setInput((cur) => cur || last.freeform);
+      toast.error(info.message);
+    },
   });
+
 
   /* When the agent analyses a website in-chat, persist it as the brand context. */
   const savedAnalysis = useRef<string | null>(null);
@@ -243,22 +264,54 @@ export function AgentChat({ threadId = "growzzy-agent", greetingName = "there" }
     return undefined;
   }, [messages]);
 
-  const submit = (text: string) => {
-    const value = text.trim();
-    if (!value || busy) return;
-    setInput("");
-    if (pendingQuestion) {
+  const run = (submission: Submission) => {
+    if (submission.kind === "ignore") return;
+    lastSubmission.current = submission;
+    setChatError(null);
+    if (submission.kind === "answer-question") {
       addToolResult({
         tool: "askUser",
-        toolCallId: pendingQuestion.toolCallId,
-        output: { answers: {}, freeform: value },
+        toolCallId: submission.toolCallId,
+        output: { answers: {}, freeform: submission.freeform },
       });
       return;
     }
-    void sendMessage({
-      text: mode === "deep" ? `${value}\n\n(Run deep live research before answering.)` : value,
-    });
+    void sendMessage({ text: submission.text });
   };
+
+  const submit = (text: string) => {
+    const submission = resolveSubmission({
+      text,
+      busy,
+      mode,
+      pending: pendingQuestion
+        ? {
+            toolName: "askUser",
+            toolCallId: pendingQuestion.toolCallId,
+            state: pendingQuestion.state,
+          }
+        : null,
+    });
+    if (submission.kind === "ignore") return;
+    setInput("");
+    run(submission);
+  };
+
+  const retry = () => {
+    const last = lastSubmission.current;
+    if (!last || last.kind === "ignore") return;
+    setInput("");
+    run(last);
+  };
+
+  const transcript = () =>
+    downloadTranscript(
+      buildTranscript(messages as unknown as TranscriptMessage[], {
+        title: `Growzzy transcript — ${brand.businessName || "workspace"}`,
+      }),
+      `growzzy-transcript-${new Date().toISOString().slice(0, 10)}.md`,
+    );
+
 
   const composer = (
     <div className={cn("w-full px-1 pb-2", hasPreview ? "" : "mx-auto max-w-3xl")}>
@@ -381,7 +434,46 @@ export function AgentChat({ threadId = "growzzy-agent", greetingName = "there" }
   return (
     <div className="flex h-[calc(100vh-116px)] gap-4">
       <div className="flex min-w-0 flex-1 flex-col">
+        {started && (
+          <div className="flex items-center justify-end gap-2 px-1 pb-1">
+            <Button variant="outline" size="sm" className="gap-1.5" onClick={transcript}>
+              <DownloadIcon className="h-3.5 w-3.5" /> Download transcript
+            </Button>
+          </div>
+        )}
         {thread}
+        {chatError && (
+          <div
+            className={cn(
+              "mx-1 mb-2 flex flex-wrap items-center justify-between gap-3 rounded-[12px] border p-3",
+              hasPreview ? "" : "mx-auto w-full max-w-3xl",
+              chatError.kind === "credits" || chatError.kind === "blocked"
+                ? "border-warn/40 bg-warn-bg/60"
+                : "border-border bg-muted/50",
+            )}
+          >
+            <div className="min-w-0">
+              <div className="text-[12.5px] font-medium text-foreground">
+                {chatError.kind === "credits"
+                  ? "AI credits exhausted"
+                  : chatError.kind === "blocked"
+                    ? "AI access blocked"
+                    : chatError.kind === "rate-limit"
+                      ? "Rate limited"
+                      : "Couldn't reach Growzzy"}
+              </div>
+              <p className="text-[12px] leading-snug text-muted-foreground">{chatError.message}</p>
+            </div>
+            <div className="flex shrink-0 gap-2">
+              <Button size="sm" onClick={retry} disabled={busy} className="gap-1.5">
+                <RefreshCw className="h-3.5 w-3.5" /> Retry
+              </Button>
+              <Button size="sm" variant="outline" onClick={() => setChatError(null)}>
+                Dismiss
+              </Button>
+            </div>
+          </div>
+        )}
         {composer}
       </div>
       {hasPreview && (
