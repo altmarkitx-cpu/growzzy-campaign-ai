@@ -254,7 +254,20 @@ export const Route = createFileRoute("/api/chat")({
           },
         });
 
-        return result.toUIMessageStreamResponse({ originalMessages: messages });
+        return result.toUIMessageStreamResponse({
+          originalMessages: messages,
+          onError: (error) => {
+            const err = error as { statusCode?: number; message?: string; responseBody?: string };
+            const status = err?.statusCode;
+            if (status === 402)
+              return "402 — your workspace is out of AI credits. Add credits and retry.";
+            if (status === 403)
+              return "403 — AI access is blocked by a workspace limit or policy.";
+            if (status === 429) return "429 — rate limited, retry in a few seconds.";
+            console.error("[growzzy] chat error", status, err?.message);
+            return err?.message ?? "Growzzy hit an unexpected error.";
+          },
+        });
       },
     },
   },
