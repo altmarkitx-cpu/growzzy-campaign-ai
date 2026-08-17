@@ -255,22 +255,54 @@ export function AgentChat({ threadId = "growzzy-agent", greetingName = "there" }
     return undefined;
   }, [messages]);
 
-  const submit = (text: string) => {
-    const value = text.trim();
-    if (!value || busy) return;
-    setInput("");
-    if (pendingQuestion) {
+  const run = (submission: Submission) => {
+    if (submission.kind === "ignore") return;
+    lastSubmission.current = submission;
+    setChatError(null);
+    if (submission.kind === "answer-question") {
       addToolResult({
         tool: "askUser",
-        toolCallId: pendingQuestion.toolCallId,
-        output: { answers: {}, freeform: value },
+        toolCallId: submission.toolCallId,
+        output: { answers: {}, freeform: submission.freeform },
       });
       return;
     }
-    void sendMessage({
-      text: mode === "deep" ? `${value}\n\n(Run deep live research before answering.)` : value,
-    });
+    void sendMessage({ text: submission.text });
   };
+
+  const submit = (text: string) => {
+    const submission = resolveSubmission({
+      text,
+      busy,
+      mode,
+      pending: pendingQuestion
+        ? {
+            toolName: "askUser",
+            toolCallId: pendingQuestion.toolCallId,
+            state: pendingQuestion.state,
+          }
+        : null,
+    });
+    if (submission.kind === "ignore") return;
+    setInput("");
+    run(submission);
+  };
+
+  const retry = () => {
+    const last = lastSubmission.current;
+    if (!last || last.kind === "ignore") return;
+    setInput("");
+    run(last);
+  };
+
+  const transcript = () =>
+    downloadTranscript(
+      buildTranscript(messages as unknown as TranscriptMessage[], {
+        title: `Growzzy transcript — ${brand.businessName || "workspace"}`,
+      }),
+      `growzzy-transcript-${new Date().toISOString().slice(0, 10)}.md`,
+    );
+
 
   const composer = (
     <div className={cn("w-full px-1 pb-2", hasPreview ? "" : "mx-auto max-w-3xl")}>
