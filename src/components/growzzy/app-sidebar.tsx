@@ -1,4 +1,5 @@
 import { Link, useRouterState } from "@tanstack/react-router";
+import { useUserProfile, initials } from "@/lib/user-store";
 import {
   Sparkles,
   FolderKanban,
@@ -158,20 +159,35 @@ export function AppSidebar() {
 
       {/* User chip */}
       <div className="border-t border-border p-2">
-        <button className="w-full flex items-center gap-2.5 rounded-[10px] p-2 hover:bg-muted transition-colors">
-          <div className="h-8 w-8 rounded-full bg-primary/90 text-primary-foreground grid place-items-center text-[12px] font-semibold shrink-0">
-            AN
-          </div>
-          <div className="flex-1 text-left overflow-hidden">
-            <div className="text-[12.5px] font-semibold truncate">Anand M.</div>
-            <div className="text-[10.5px] text-muted-foreground truncate">anand@growzzy.co</div>
-          </div>
-          <MoreHorizontal className="h-4 w-4 text-muted-foreground" />
-        </button>
+        <UserChip />
       </div>
     </aside>
   );
 }
+
+/** Shows the signed-in person's own details; prompts setup when unknown. */
+function UserChip() {
+  const user = useUserProfile();
+  const label = user.name || "Set up your profile";
+  const sub = user.email || "Add your name in Settings › General";
+  return (
+    <Link
+      to="/settings/general"
+      className="w-full flex items-center gap-2.5 rounded-[10px] p-2 hover:bg-muted transition-colors"
+    >
+      <div className="h-8 w-8 rounded-full bg-primary/90 text-primary-foreground grid place-items-center text-[12px] font-semibold shrink-0">
+        {initials(user) || <Building2 className="h-4 w-4" />}
+      </div>
+      <div className="flex-1 text-left overflow-hidden">
+        <div className="text-[12.5px] font-semibold truncate">{label}</div>
+        <div className="text-[10.5px] text-muted-foreground truncate">{sub}</div>
+      </div>
+      <MoreHorizontal className="h-4 w-4 text-muted-foreground" />
+    </Link>
+  );
+}
+
+
 
 export function TopBar({
   onOpenPalette,

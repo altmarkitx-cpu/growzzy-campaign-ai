@@ -24,5 +24,5 @@ export const Route = createFileRoute("/_app/builder/$planId")({
 
 function BuilderPage() {
   const { planId } = useParams({ from: "/_app/builder/$planId" });
-  return <AgentChat key={planId} threadId={planId} greetingName="Dheekshit" />;
+  return <AgentChat key={planId} threadId={planId} />;
 }

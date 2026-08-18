@@ -40,20 +40,49 @@ function GeneralSettings() {
 
   const save = async () => {
     setSaving(true);
-    await new Promise((r) => setTimeout(r, 500));
+    saveUser(profile);
     setSaving(false);
-    toast.success("Workspace saved.");
+    toast.success("Settings saved.");
   };
 
   return (
     <>
       <SettingsPageHeader
         title="General Settings"
-        description="How Growzzy identifies your workspace across the platform."
+        description="How Growzzy identifies you and your workspace across the platform."
         onSave={save}
-        onDiscard={() => toast("Changes discarded.")}
+        onDiscard={() => {
+          setProfile(loadUser());
+          toast("Changes discarded.");
+        }}
         saving={saving}
       />
+
+      <SettingsSection title="Your profile">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div>
+            <Label className="text-[12px]">Your name</Label>
+            <Input
+              value={profile.name}
+              onChange={(e) => setProfile((p) => ({ ...p, name: e.target.value }))}
+              className="mt-1"
+              placeholder="Your full name"
+            />
+          </div>
+          <div>
+            <Label className="text-[12px]">Your email</Label>
+            <Input
+              value={profile.email}
+              onChange={(e) => setProfile((p) => ({ ...p, email: e.target.value }))}
+              className="mt-1"
+              placeholder="you@company.com"
+            />
+          </div>
+        </div>
+        <p className="mt-2 text-[12px] text-muted-foreground">
+          Used to greet you in the AI campaign chat and in the sidebar.
+        </p>
+      </SettingsSection>
 
       <SettingsSection title="Workspace">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">

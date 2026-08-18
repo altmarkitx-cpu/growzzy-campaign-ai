@@ -5,8 +5,10 @@ import {
   saveBrand,
   brandIsReady,
   brandContextText,
+  emptyBrand,
   type BrandProfile,
 } from "@/lib/brand-store";
+import { useUserProfile, firstName } from "@/lib/user-store";
 import {
   resolveSubmission,
   classifyChatError,
@@ -108,28 +110,66 @@ type CampaignInput = {
   risks: string[];
 };
 
-const suggestions = [
-  {
-    icon: Target,
-    title: "Launch a lead-gen campaign",
-    text: "Get demo bookings for my B2B SaaS in the US, budget $80/day",
-  },
-  {
-    icon: Megaphone,
-    title: "Sell a product",
-    text: "Sell handmade silver jewellery to women 25–45 in India, ₹1,500/day",
-  },
-  {
-    icon: Wand2,
-    title: "Creative + copy pack",
-    text: "Build a full creative and copy pack for my fitness app launch",
-  },
-  {
-    icon: Rocket,
-    title: "Scale what works",
-    text: "My CPA is rising on search — rebuild the campaign around high-intent keywords",
-  },
-];
+/** Suggestions are built from the user's own brand profile — never generic demo copy. */
+function buildSuggestions(brand: BrandProfile) {
+  const name = brand.businessName.trim();
+  if (!brandIsReady(brand)) {
+    return [
+      {
+        icon: Target,
+        title: "Set up my brand from my site",
+        text: "Analyse my website and learn my business, audience and competitors",
+      },
+      {
+        icon: Megaphone,
+        title: "Plan my first campaign",
+        text: "I want to launch my first ad campaign — ask me what you need to know",
+      },
+      {
+        icon: Wand2,
+        title: "Ask about ads",
+        text: "How should I split budget between Google Ads and Meta Ads?",
+      },
+      {
+        icon: Rocket,
+        title: "Research my market",
+        text: "Research my market and tell me what my competitors are advertising",
+      },
+    ];
+  }
+
+  const offer = (brand.whatTheySell || brand.productDescription).trim();
+  const segment = brand.segments[0]?.segment ?? brand.audience;
+  const competitor = brand.competitors[0]?.name;
+  const keyword = brand.keywords[0];
+
+  return [
+    {
+      icon: Target,
+      title: `Launch a campaign for ${name}`,
+      text: `Build a lead-gen campaign for ${name}${offer ? ` promoting ${offer}` : ""}${segment ? ` targeting ${segment}` : ""}`,
+    },
+    {
+      icon: Rocket,
+      title: keyword ? `Own "${keyword}"` : "Capture high-intent search",
+      text: keyword
+        ? `Build a Google Ads campaign for ${name} around "${keyword}" and similar high-intent searches`
+        : `Find the highest-intent search terms for ${name} and build a Google Ads campaign around them`,
+    },
+    {
+      icon: Wand2,
+      title: "Creative + copy pack",
+      text: `Create ad copy and a visual for ${name} in our ${brand.tone || "brand"} tone${segment ? ` for ${segment}` : ""}`,
+    },
+    {
+      icon: Megaphone,
+      title: competitor ? `Beat ${competitor}` : "Study my competitors",
+      text: competitor
+        ? `Research what ${competitor} is doing in ads and how ${name} should position against them`
+        : `Research who competes with ${name} and how we should position against them`,
+    },
+  ];
+}
 
 type Artifacts = {
   plan?: PlanInput;
@@ -173,13 +213,14 @@ const modes = [
 
 export interface AgentChatProps {
   threadId?: string;
-  greetingName?: string;
 }
 
-export function AgentChat({ threadId = "growzzy-agent", greetingName = "there" }: AgentChatProps) {
+export function AgentChat({ threadId = "growzzy-agent" }: AgentChatProps) {
   const [input, setInput] = useState("");
   const [mode, setMode] = useState("standard");
-  const [brand, setBrand] = useState<BrandProfile>(() => loadBrand());
+  // Starts empty so SSR and the first client render agree; filled after mount.
+  const [brand, setBrand] = useState<BrandProfile>(emptyBrand);
+  const user = useUserProfile();
 
   useEffect(() => {
     const sync = () => setBrand(loadBrand());
@@ -189,6 +230,8 @@ export function AgentChat({ threadId = "growzzy-agent", greetingName = "there" }
   }, []);
 
   const brandReady = brandIsReady(brand);
+  const suggestions = useMemo(() => buildSuggestions(brand), [brand]);
+  const greetingName = firstName(user) || brand.businessName || "there";
 
   const [chatError, setChatError] = useState<{ kind: ChatErrorKind; message: string } | null>(null);
   const lastSubmission = useRef<Submission | null>(null);
@@ -304,12 +347,25 @@ export function AgentChat({ threadId = "growzzy-agent", greetingName = "there" }
     run(last);
   };
 
+  /* Remembers when each turn appeared so the transcript can be timestamped. */
+  const turnTimes = useRef<Record<string, string>>({});
+  useEffect(() => {
+    messages.forEach((m) => {
+      turnTimes.current[m.id] ??= new Date().toISOString();
+    });
+  }, [messages]);
+
   const transcript = () =>
     downloadTranscript(
-      buildTranscript(messages as unknown as TranscriptMessage[], {
-        title: `Growzzy transcript — ${brand.businessName || "workspace"}`,
-      }),
-      `growzzy-transcript-${new Date().toISOString().slice(0, 10)}.md`,
+      buildTranscript(
+        messages.map((m) => ({
+          role: m.role,
+          parts: m.parts as unknown as TranscriptMessage["parts"],
+          at: turnTimes.current[m.id],
+        })),
+        { title: `Growzzy transcript — ${brand.businessName || "workspace"}` },
+      ),
+      `growzzy-transcript-${new Date().toISOString().slice(0, 19).replace(/[:T]/g, "-")}.md`,
     );
 
 
