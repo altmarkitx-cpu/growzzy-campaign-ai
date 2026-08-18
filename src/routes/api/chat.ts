@@ -15,16 +15,11 @@ Your job: turn a business request into a complete, launch-ready ad campaign.
 Workflow — follow it strictly, one tool at a time:
 1. ANALYSE the request together with the BRAND CONTEXT below. The brand context is the source of truth for the business, product, audience and tone — treat it as already answered and NEVER ask the user to re-state anything it already contains (do not ask what the business is, what they sell, or who their customer is when that is provided).
 2. If the user gives a website URL (or one is in the brand context) and you don't already have a deep analysis of it, call analyzeWebsite to fetch and study the real site before planning.
-3. If something genuinely material is still missing (for example budget, geography, campaign goal, landing page, or platform), ask a single natural-language question in your response. Never use option cards, fixed templates, or ask the user to choose from a predefined list; accept any free-form answer and continue from it. Ask only what you are uncertain about, and skip questions entirely when the brief is complete.
-4. Call research for market, competitors, keywords, creative angles and benchmarks. Use the returned notes in your reasoning and show concise source/citation links whenever a real URL is available.
-5. Call proposePlan with a step-by-step execution plan (4–7 steps) and wait for the user's explicit approval or decline. Do not generate any creative or deliver anything before approval.
-6. Only after an explicit approval: call generateCreative once (a vivid, brand-appropriate ad visual prompt), then call deliverCampaign with the complete campaign package.
+3. Only if something genuinely material is still missing (e.g. budget, geography, campaign goal, landing page), call askUser ONCE with 1–3 short, question-wise doubts, each with 2–4 concrete options plus a recommended one. If everything needed is known, skip this step entirely.
+4. Call research for market, competitors, keywords, creative angles and benchmarks. Use the returned notes in your reasoning.
+5. Call proposePlan with a step-by-step execution plan (4–7 steps) and wait for the user's approval. Do not build anything before approval.
+6. After approval: call generateCreative once (a vivid, brand-appropriate ad visual prompt), then call deliverCampaign with the complete campaign package.
 7. Finish with a short markdown summary (use tables for ad copy variations) and 2–3 next-step suggestions.
-
-Conversation scope:
-- You are also a general marketing and campaign assistant. Answer direct questions about campaign setup, Google Ads, Meta Ads, attribution, audiences, budgets, creative, analytics, and the user's brand without forcing the user into campaign creation.
-- If the user asks a direct question, answer it directly. Do not call askUser, proposePlan, research, or any campaign tool unless the user asks to create or change a campaign.
-- Supported ad platforms are Google Ads and Meta Ads only. Never mention or suggest LinkedIn.
 
 Rules:
 - Be concise and concrete. No filler, no restating the brief.
@@ -125,6 +120,11 @@ export const Route = createFileRoute("/api/chat")({
                 return { focus, notes: text };
               },
             }),
+            askUser: tool({
+              description:
+                "Ask the user your clarifying doubts before planning. The user answers in the UI.",
+              inputSchema: questionSchema,
+            }),
             proposePlan: tool({
               description:
                 "Show the execution plan and wait for the user to approve it or request changes.",
@@ -155,7 +155,6 @@ export const Route = createFileRoute("/api/chat")({
               execute: async ({ prompt, caption }) => {
                 const { url, error } = await generateAdImage(
                   `High-converting advertising creative, square 1:1, clean commercial photography or modern graphic design, space for a headline, no gibberish text. ${prompt}`,
-                  request.signal,
                 );
                 return url
                   ? { caption, imageUrl: url }
