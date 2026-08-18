@@ -347,12 +347,25 @@ export function AgentChat({ threadId = "growzzy-agent" }: AgentChatProps) {
     run(last);
   };
 
+  /* Remembers when each turn appeared so the transcript can be timestamped. */
+  const turnTimes = useRef<Record<string, string>>({});
+  useEffect(() => {
+    messages.forEach((m) => {
+      turnTimes.current[m.id] ??= new Date().toISOString();
+    });
+  }, [messages]);
+
   const transcript = () =>
     downloadTranscript(
-      buildTranscript(messages as unknown as TranscriptMessage[], {
-        title: `Growzzy transcript — ${brand.businessName || "workspace"}`,
-      }),
-      `growzzy-transcript-${new Date().toISOString().slice(0, 10)}.md`,
+      buildTranscript(
+        messages.map((m) => ({
+          role: m.role,
+          parts: m.parts as unknown as TranscriptMessage["parts"],
+          at: turnTimes.current[m.id],
+        })),
+        { title: `Growzzy transcript — ${brand.businessName || "workspace"}` },
+      ),
+      `growzzy-transcript-${new Date().toISOString().slice(0, 19).replace(/[:T]/g, "-")}.md`,
     );
 
 
