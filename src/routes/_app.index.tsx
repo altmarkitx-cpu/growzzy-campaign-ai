@@ -23,5 +23,5 @@ export const Route = createFileRoute("/_app/")({
 });
 
 function NewCampaignPage() {
-  return <AgentChat threadId="growzzy-new-campaign" greetingName="Dheekshit" />;
+  return <AgentChat threadId="growzzy-new-campaign" />;
 }
