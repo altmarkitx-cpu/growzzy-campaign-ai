@@ -211,13 +211,14 @@ const modes = [
 
 export interface AgentChatProps {
   threadId?: string;
-  greetingName?: string;
 }
 
-export function AgentChat({ threadId = "growzzy-agent", greetingName = "there" }: AgentChatProps) {
+export function AgentChat({ threadId = "growzzy-agent" }: AgentChatProps) {
   const [input, setInput] = useState("");
   const [mode, setMode] = useState("standard");
-  const [brand, setBrand] = useState<BrandProfile>(() => loadBrand());
+  // Starts empty so SSR and the first client render agree; filled after mount.
+  const [brand, setBrand] = useState<BrandProfile>(emptyBrand);
+  const user = useUserProfile();
 
   useEffect(() => {
     const sync = () => setBrand(loadBrand());
@@ -227,6 +228,8 @@ export function AgentChat({ threadId = "growzzy-agent", greetingName = "there" }
   }, []);
 
   const brandReady = brandIsReady(brand);
+  const suggestions = useMemo(() => buildSuggestions(brand), [brand]);
+  const greetingName = firstName(user) || brand.businessName || "there";
 
   const [chatError, setChatError] = useState<{ kind: ChatErrorKind; message: string } | null>(null);
   const lastSubmission = useRef<Submission | null>(null);
