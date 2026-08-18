@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useChat } from "@ai-sdk/react";
 import {
   DefaultChatTransport,
@@ -30,6 +30,7 @@ import { StatusPill } from "@/components/growzzy/status-pill";
 import { useBrand, getBrand, brandToPromptContext, hasBrandContext } from "@/lib/brand-store";
 import logoAsset from "@/assets/growzzy-logo.png.asset.json";
 import {
+  ArrowUp,
   Check,
   CircleDot,
   Globe,
@@ -146,10 +147,22 @@ export interface AgentChatProps {
 
 export function AgentChat({ threadId = "growzzy-agent", greetingName = "there" }: AgentChatProps) {
   const [input, setInput] = useState("");
+  const [draft, setDraft] = useState("");
+  const lastPromptRef = useRef("");
   const brand = useBrand();
   const brandReady = hasBrandContext(brand);
 
-  const { messages, sendMessage, addToolResult, status } = useChat({
+  useEffect(() => {
+    const saved = window.localStorage.getItem(`growzzy-draft-${threadId}`);
+    if (saved) setDraft(saved);
+  }, [threadId]);
+
+  useEffect(() => {
+    if (draft) window.localStorage.setItem(`growzzy-draft-${threadId}`, draft);
+    else window.localStorage.removeItem(`growzzy-draft-${threadId}`);
+  }, [draft, threadId]);
+
+  const { messages, sendMessage, addToolResult, status, stop, regenerate, error, clearError } = useChat({
     id: threadId,
     transport: new DefaultChatTransport({
       api: "/api/chat",
@@ -160,7 +173,11 @@ export function AgentChat({ threadId = "growzzy-agent", greetingName = "there" }
       }),
     }),
     sendAutomaticallyWhen: lastAssistantMessageIsCompleteWithToolCalls,
-    onError: (e) => toast.error(e.message || "Growzzy couldn't answer — try again."),
+    onError: (e) => {
+      setInput(lastPromptRef.current);
+      setDraft(lastPromptRef.current);
+      toast.error(e.message || "Growzzy couldn't answer — your draft is preserved.");
+    },
   });
 
   const busy = status === "submitted" || status === "streaming";
@@ -169,8 +186,42 @@ export function AgentChat({ threadId = "growzzy-agent", greetingName = "there" }
   const submit = (text: string) => {
     const value = text.trim();
     if (!value || busy) return;
+    lastPromptRef.current = value;
+    setDraft(value);
     setInput("");
+    clearError();
     void sendMessage({ text: value });
+  };
+
+  const retry = () => {
+    clearError();
+    if (messages.length > 0) void regenerate();
+    else if (lastPromptRef.current) submit(lastPromptRef.current);
+  };
+
+  const downloadTranscript = () => {
+    const lines = messages.map((message) => {
+      const time = new Date().toLocaleString();
+      const body = message.parts
+        .map((part) => {
+          if (part.type === "text") return part.text;
+          if (isToolUIPart(part)) {
+            const name = getToolName(part as ToolUIPart);
+            return `[${name}]\\n${JSON.stringify({ input: part.input, output: part.output }, null, 2)}`;
+          }
+          return "";
+        })
+        .filter(Boolean)
+        .join("\\n");
+      return `${time} — ${message.role.toUpperCase()}\\n${body}`;
+    });
+    const blob = new Blob([lines.join("\\n\\n---\\n\\n")], { type: "text/plain;charset=utf-8" });
+    const url = URL.createObjectURL(blob);
+    const anchor = document.createElement("a");
+    anchor.href = url;
+    anchor.download = `growzzy-transcript-${new Date().toISOString().slice(0, 10)}.txt`;
+    anchor.click();
+    URL.revokeObjectURL(url);
   };
 
   return (
@@ -239,9 +290,20 @@ export function AgentChat({ threadId = "growzzy-agent", greetingName = "there" }
         </div>
       )}
 
+      {started && (
+        <div className="mx-auto mb-2 flex w-full max-w-3xl items-center justify-between gap-2 px-1">
+          <div className="flex items-center gap-2">
+            {error && <Button size="sm" variant="outline" onClick={retry}>Retry with my draft</Button>}
+            {error && <span className="text-xs text-destructive">Your last message is preserved.</span>}
+          </div>
+          <Button size="sm" variant="ghost" onClick={downloadTranscript}>Download transcript</Button>
+        </div>
+      )}
+
       {/* Composer */}
       <div className="mx-auto w-full max-w-3xl px-1 pb-2">
         <PromptInput
+          className="rounded-2xl bg-card shadow-sm"
           onSubmit={(_msg, e) => {
             e.preventDefault();
             submit(input);
@@ -259,12 +321,21 @@ export function AgentChat({ threadId = "growzzy-agent", greetingName = "there" }
           />
           <PromptInputFooter className="justify-between">
             <PromptInputTools>
-              <span className="inline-flex items-center gap-1.5 rounded-full border border-border bg-background px-2.5 py-1 text-[11.5px] text-muted-foreground">
+              <button type="button" className="inline-flex items-center gap-1.5 rounded-lg border border-border bg-background px-2.5 py-1.5 text-[12px] text-muted-foreground" aria-label="Research mode">
                 <CircleDot className="h-3 w-3 text-primary" />
-                Auto-research
-              </span>
+                Standard
+              </button>
             </PromptInputTools>
-            <PromptInputSubmit status={status} disabled={!input.trim() && !busy} />
+            {busy && (
+              <Button type="button" size="icon" variant="outline" aria-label="Cancel generation" onClick={() => stop()} className="rounded-full">
+                <span className="size-2.5 rounded-sm bg-current" />
+              </Button>
+            )}
+            {!busy && (
+              <Button type="submit" size="icon" aria-label="Send message" disabled={!input.trim()} className="rounded-full bg-foreground text-background hover:bg-foreground/90">
+                <ArrowUp className="size-4" />
+              </Button>
+            )}
           </PromptInputFooter>
         </PromptInput>
         <p className="mt-2 text-center text-[11px] text-muted-foreground">
@@ -307,15 +378,6 @@ function AgentMessage({
             if (!isToolUIPart(part)) return null;
             const name = getToolName(part as ToolUIPart);
 
-            if (name === "askUser") {
-              return (
-                <QuestionsCard
-                  key={i}
-                  part={part as ToolUIPart}
-                  addToolResult={addToolResult}
-                />
-              );
-            }
             if (name === "proposePlan") {
               return (
                 <PlanCard key={i} part={part as ToolUIPart} addToolResult={addToolResult} />

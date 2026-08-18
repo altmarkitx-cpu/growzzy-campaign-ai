@@ -40,7 +40,10 @@ export function getChatModel(): LanguageModel {
 }
 
 /** Generates one ad creative image and returns it as a data URL. */
-export async function generateAdImage(prompt: string): Promise<{ url: string | null; error?: string }> {
+export async function generateAdImage(
+  prompt: string,
+  signal?: AbortSignal,
+): Promise<{ url: string | null; error?: string }> {
   const key = lovableKey();
 
   // Lovable path: their chat-completions endpoint returns an image on the message.
@@ -52,6 +55,7 @@ export async function generateAdImage(prompt: string): Promise<{ url: string | n
         "Lovable-API-Key": key,
         "X-Lovable-AIG-SDK": "fetch",
       },
+      signal,
       body: JSON.stringify({
         model: IMAGE_MODEL,
         messages: [{ role: "user", content: prompt }],
@@ -77,6 +81,7 @@ export async function generateAdImage(prompt: string): Promise<{ url: string | n
       model: gateway(IMAGE_MODEL),
       providerOptions: { google: { responseModalities: ["TEXT", "IMAGE"] } },
       prompt,
+      abortSignal: signal,
     });
     const image = files?.find((f) => f.mediaType?.startsWith("image/"));
     if (!image) {
