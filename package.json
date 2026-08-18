@@ -4,12 +4,13 @@
   "sideEffects": false,
   "type": "module",
   "scripts": {
-    "dev": "vite dev",
-    "build": "vite build",
+    "dev": "next dev",
+    "build": "next build",
     "build:dev": "vite build --mode development",
     "preview": "vite preview",
-    "lint": "eslint .",
-    "format": "prettier --write ."
+    "lint": "next lint",
+    "format": "prettier --write .",
+    "start": "next start"
   },
   "dependencies": {
     "@ai-sdk/openai-compatible": "^3.0.27",
@@ -60,6 +61,7 @@
     "lucide-react": "^0.575.0",
     "motion": "^13.0.0",
     "nanoid": "^6.0.1",
+    "next": "^16.3.1",
     "react": "^19.2.0",
     "react-day-picker": "^9.14.0",
     "react-dom": "^19.2.0",
@@ -80,6 +82,7 @@
   "devDependencies": {
     "@eslint/js": "^9.32.0",
     "@lovable.dev/vite-tanstack-config": "2.9.1",
+    "@tailwindcss/postcss": "^4.3.3",
     "@types/node": "^22.16.5",
     "@types/react": "^19.2.0",
     "@types/react-dom": "^19.2.0",
