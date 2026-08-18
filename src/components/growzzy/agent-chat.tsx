@@ -5,8 +5,10 @@ import {
   saveBrand,
   brandIsReady,
   brandContextText,
+  emptyBrand,
   type BrandProfile,
 } from "@/lib/brand-store";
+import { useUserProfile, firstName } from "@/lib/user-store";
 import {
   resolveSubmission,
   classifyChatError,
