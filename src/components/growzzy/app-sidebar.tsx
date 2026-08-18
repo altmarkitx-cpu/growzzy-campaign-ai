@@ -1,4 +1,5 @@
 import { Link, useRouterState } from "@tanstack/react-router";
+import { useUserProfile, initials } from "@/lib/user-store";
 import {
   Sparkles,
   FolderKanban,
