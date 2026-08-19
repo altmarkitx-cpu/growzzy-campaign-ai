@@ -1,4 +1,5 @@
-import { Link, useRouterState } from "@tanstack/react-router";
+import Link from "next/link";
+import { usePathname } from "next/navigation";
 import { useUserProfile, initials } from "@/lib/user-store";
 import {
   Sparkles,
@@ -76,7 +77,7 @@ function Group({
 function NavRow({ to, label, icon: Icon, active }: NavItem & { active: boolean }) {
   return (
     <Link
-      to={to}
+      href={to}
       className={cn(
         "flex items-center gap-2.5 rounded-[8px] px-3 py-[7px] text-[13.5px] font-medium transition-colors",
         active
@@ -91,7 +92,7 @@ function NavRow({ to, label, icon: Icon, active }: NavItem & { active: boolean }
 }
 
 export function AppSidebar() {
-  const path = useRouterState({ select: (s) => s.location.pathname });
+  const path = usePathname() ?? "/";
   const isActive = (to: string) => (to === "/" ? path === "/" : path.startsWith(to));
 
   return (
@@ -172,7 +173,7 @@ function UserChip() {
   const sub = user.email || "Add your name in Settings › General";
   return (
     <Link
-      to="/settings/general"
+      href="/settings/general"
       className="w-full flex items-center gap-2.5 rounded-[10px] p-2 hover:bg-muted transition-colors"
     >
       <div className="h-8 w-8 rounded-full bg-primary/90 text-primary-foreground grid place-items-center text-[12px] font-semibold shrink-0">

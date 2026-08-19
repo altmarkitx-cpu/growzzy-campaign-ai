@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { Link } from "@tanstack/react-router";
+import Link from "next/link";
 import {
   loadBrand,
   saveBrand,
@@ -457,7 +457,7 @@ export function AgentChat({ threadId = "growzzy-agent" }: AgentChatProps) {
             up once in My Brand.
           </span>
           <Link
-            to="/brand"
+            href="/brand"
             className="shrink-0 rounded-full bg-primary px-3 py-1.5 text-[12px] font-medium text-primary-foreground"
           >
             Set up My Brand
@@ -756,7 +756,7 @@ function BrandUrlCard({ part, addToolResult }: { part: ToolUIPart; addToolResult
       )}
       <p className="mt-2 text-[11px] text-muted-foreground">
         Or set it up once in{" "}
-        <Link to="/brand" className="text-primary hover:underline">
+        <Link href="/brand" className="text-primary hover:underline">
           My Brand
         </Link>
         .
