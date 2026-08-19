@@ -16,6 +16,7 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import { useState } from "react";
+import { loadUser, saveUser, emptyUser, type UserProfile } from "@/lib/user-store";
 import { toast } from "sonner";
 import { AlertTriangle } from "lucide-react";
 
@@ -24,6 +25,7 @@ export const Route = createFileRoute("/_app/settings/general")({
 });
 
 function GeneralSettings() {
+  const [profile, setProfile] = useState<UserProfile>(emptyUser);
   const [form, setForm] = useState({
     workspaceName: "",
     website: "",

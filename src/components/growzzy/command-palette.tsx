@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { useNavigate } from "@tanstack/react-router";
+import { useRouter } from "next/navigation";
 import {
   CommandDialog,
   CommandInput,
@@ -38,7 +38,7 @@ export function useCommandPalette() {
 }
 
 export function CommandPalette({ open, onOpenChange }: { open: boolean; onOpenChange: (v: boolean) => void }) {
-  const navigate = useNavigate();
+  const router = useRouter();
   return (
     <CommandDialog open={open} onOpenChange={onOpenChange}>
       <CommandInput placeholder="Jump to a section or search campaigns…" />
@@ -50,7 +50,7 @@ export function CommandPalette({ open, onOpenChange }: { open: boolean; onOpenCh
               key={n.to}
               onSelect={() => {
                 onOpenChange(false);
-                navigate({ to: n.to });
+                router.push(n.to);
               }}
             >
               {n.label}
