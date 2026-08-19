@@ -6,8 +6,9 @@ import { AgentChat } from "@/components/growzzy/agent-chat";
 import { Bell, Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useRouter } from "next/navigation";
+import type { ReactNode } from "react";
 
-export function NextShell() {
+export function NextShell({ children }: { children?: ReactNode }) {
   const { open, setOpen } = useCommandPalette();
   const router = useRouter();
   return (
@@ -23,7 +24,7 @@ export function NextShell() {
             </>
           }
         />
-        <main className="flex-1 min-w-0 p-6"><AgentChat threadId="growzzy-new-campaign" /></main>
+        <main className="flex-1 min-w-0 p-6">{children ?? <AgentChat threadId="growzzy-new-campaign" />}</main>
       </div>
       <CommandPalette open={open} onOpenChange={setOpen} />
     </div>
