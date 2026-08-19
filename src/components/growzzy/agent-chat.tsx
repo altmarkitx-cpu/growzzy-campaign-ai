@@ -240,7 +240,7 @@ export function AgentChat({ threadId = "growzzy-agent" }: AgentChatProps) {
     id: threadId,
     transport: new DefaultChatTransport({
       api: "/api/chat",
-      body: () => ({ brandContext: brandContextText(loadBrand()) }),
+      body: () => ({ brandContext: brandContextText(loadBrand()), source: "nextjs-campaign" }),
     }),
     sendAutomaticallyWhen: lastAssistantMessageIsCompleteWithToolCalls,
     onError: (e) => {
